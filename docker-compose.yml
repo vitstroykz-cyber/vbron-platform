@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  vbron-postgres:
+    image: postgres:16-alpine
+    container_name: vbron_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vbron
+      POSTGRES_USER: vbron_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Almaty
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    networks:
+      - vbron_internal
+    # Порт наружу не пробрасываем — БД доступна только внутри Docker
+    # Если понадобится подключиться извне для отладки — добавим временно
+
+networks:
+  vbron_internal:
+    name: vbron_internal
+    driver: bridge
