@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vbron — Админ-панель</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen" x-data="adminApp()" x-init="init()">
+
+    <!-- Загрузка -->
+    <div x-show="loading" class="min-h-screen flex items-center justify-center">
+        <div class="text-center">
+            <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-300 border-t-blue-600 mb-3"></div>
+            <p class="text-gray-600 text-sm">Загрузка...</p>
+        </div>
+    </div>
+
+    <!-- Логин -->
+    <div x-show="!loading && !user" x-cloak class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
+            <div class="text-center mb-6">
+                <div class="text-3xl font-bold text-gray-900">vbron</div>
+                <p class="text-gray-500 text-sm mt-1">Админ-панель</p>
+            </div>
+            <form @submit.prevent="login()" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" x-model="loginForm.email" required autocomplete="username"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+                    <input type="password" x-model="loginForm.password" required autocomplete="current-password"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div x-show="loginError" x-cloak class="text-red-600 text-sm" x-text="loginError"></div>
+                <button type="submit" :disabled="loggingIn"
+                        class="w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition disabled:opacity-50">
+                    <span x-show="!loggingIn">Войти</span>
+                    <span x-show="loggingIn">Вход...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Дашборд -->
+    <div x-show="!loading && user" x-cloak>
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div>
+                    <div class="font-bold text-lg text-gray-900" x-text="tenant?.name || 'vbron'"></div>
+                    <div class="text-xs text-gray-500" x-text="'План: ' + (tenant?.plan || '')"></div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-600" x-text="user?.full_name || user?.email"></span>
+                    <button @click="logout()" class="text-sm text-gray-500 hover:text-gray-700">Выход</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Контент -->
+        <main class="max-w-7xl mx-auto px-6 py-6">
+
+            <!-- Статистика -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="text-xs text-gray-500">Новые</div>
+                    <div class="text-2xl font-bold text-blue-600" x-text="stats.new"></div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="text-xs text-gray-500">Подтверждённые</div>
+                    <div class="text-2xl font-bold text-green-600" x-text="stats.confirmed"></div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="text-xs text-gray-500">Оплачено</div>
+                    <div class="text-2xl font-bold text-emerald-600" x-text="stats.paid"></div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="text-xs text-gray-500">Отменено</div>
+                    <div class="text-2xl font-bold text-gray-400" x-text="stats.cancelled"></div>
+                </div>
+            </div>
+
+            <!-- Фильтры + кнопка ручной брони -->
+            <div class="bg-white rounded-xl p-4 shadow-sm mb-4 flex flex-wrap gap-2 items-center justify-between">
+                <div class="flex flex-wrap gap-2">
+                    <button @click="setFilter('')" :class="filterStatus === '' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'"
+                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Все</button>
+                    <button @click="setFilter('new')" :class="filterStatus === 'new' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
+                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Новые</button>
+                    <button @click="setFilter('confirmed')" :class="filterStatus === 'confirmed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'"
+                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Подтверждённые</button>
+                    <button @click="setFilter('paid')" :class="filterStatus === 'paid' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'"
+                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Оплачено</button>
+                    <button @click="setFilter('cancelled')" :class="filterStatus === 'cancelled' ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-700'"
+                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Отменено</button>
+                </div>
+                <button @click="openManualModal()" class="bg-blue-900 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-800">
+                    + Ручная бронь
+                </button>
+            </div>
+
+            <!-- Список броней -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div x-show="bookings.length === 0" x-cloak class="p-8 text-center text-gray-500">
+                    Заявок пока нет
+                </div>
+
+                <table x-show="bookings.length > 0" x-cloak class="w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr class="text-left text-xs text-gray-500 uppercase">
+                            <th class="px-4 py-3">Дата</th>
+                            <th class="px-4 py-3">Гость</th>
+                            <th class="px-4 py-3">Номер</th>
+                            <th class="px-4 py-3">Период</th>
+                            <th class="px-4 py-3">Сумма</th>
+                            <th class="px-4 py-3">Статус</th>
+                            <th class="px-4 py-3">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="b in bookings" :key="b.id">
+                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                <td class="px-4 py-3 text-sm text-gray-500" x-text="formatDate(b.created_at)"></td>
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-gray-900" x-text="b.guest_name"></div>
+                                    <a :href="'tel:' + b.guest_phone" class="text-xs text-blue-600 hover:underline" x-text="b.guest_phone"></a>
+                                </td>
+                                <td class="px-4 py-3 text-sm" x-text="b.room_name"></td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    <span x-text="formatDateShort(b.check_in)"></span> →
+                                    <span x-text="formatDateShort(b.check_out)"></span>
+                                </td>
+                                <td class="px-4 py-3 text-sm font-medium" x-text="formatPrice(b.total_price)"></td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 rounded-md text-xs font-medium"
+                                          :class="statusClass(b.status)" x-text="statusLabel(b.status)"></span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex gap-1 flex-wrap">
+                                        <button x-show="b.status === 'new'" @click="updateStatus(b.id, 'confirmed')"
+                                                class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">Подтвердить</button>
+                                        <button x-show="b.status === 'confirmed'" @click="updateStatus(b.id, 'paid')"
+                                                class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200">Оплачено</button>
+                                        <button x-show="b.status !== 'cancelled' && b.status !== 'completed'" @click="updateStatus(b.id, 'cancelled')"
+                                                class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">Отменить</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+
+        <!-- Модалка ручной брони -->
+        <div x-show="manualModal" x-cloak @click.self="manualModal = false"
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-2xl p-6 max-w-md w-full max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900">Ручная бронь</h3>
+                    <button @click="manualModal = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                </div>
+                <form @submit.prevent="submitManual()" class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Номер</label>
+                        <select x-model="manual.room_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="">— выберите —</option>
+                            <template x-for="r in rooms" :key="r.id">
+                                <option :value="r.id" x-text="r.name + ' (' + formatPrice(r.price_per_day) + '/сутки)'"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Имя гостя</label>
+                        <input type="text" x-model="manual.guest_name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
+                        <input type="tel" x-model="manual.guest_phone" required placeholder="+7..." class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Заезд</label>
+                            <input type="date" x-model="manual.check_in" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Выезд</label>
+                            <input type="date" x-model="manual.check_out" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
+                        <textarea x-model="manual.notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+                    </div>
+                    <div x-show="manualError" x-cloak class="text-red-600 text-sm" x-text="manualError"></div>
+                    <button type="submit" class="w-full bg-blue-900 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-800">
+                        Создать бронь
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'https://api.vbron.kz';
+
+        function adminApp() {
+            return {
+                loading: true,
+                user: null,
+                tenant: null,
+                token: null,
+                loginForm: { email: '', password: '' },
+                loginError: '',
+                loggingIn: false,
+                bookings: [],
+                rooms: [],
+                filterStatus: '',
+                stats: { new: 0, confirmed: 0, paid: 0, cancelled: 0 },
+                manualModal: false,
+                manual: { room_id: '', guest_name: '', guest_phone: '', check_in: '', check_out: '', notes: '' },
+                manualError: '',
+
+                async init() {
+                    this.token = localStorage.getItem('vbron_token');
+                    if (this.token) {
+                        await this.loadMe();
+                    }
+                    this.loading = false;
+                },
+
+                async loadMe() {
+                    try {
+                        const res = await fetch(`${API}/api/admin/me`, { headers: this.authHeaders() });
+                        if (!res.ok) {
+                            this.token = null;
+                            localStorage.removeItem('vbron_token');
+                            return;
+                        }
+                        const data = await res.json();
+                        this.user = data.user;
+                        this.tenant = data.tenant;
+                        await this.loadAll();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                async login() {
+                    this.loginError = '';
+                    this.loggingIn = true;
+                    try {
+                        const res = await fetch(`${API}/api/admin/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.loginForm)
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                            this.loginError = data.error === 'invalid_credentials' ? 'Неверный email или пароль' : 'Ошибка входа';
+                            return;
+                        }
+                        this.token = data.token;
+                        localStorage.setItem('vbron_token', this.token);
+                        await this.loadMe();
+                    } catch (e) {
+                        this.loginError = 'Ошибка сети';
+                    } finally {
+                        this.loggingIn = false;
+                    }
+                },
+
+                logout() {
+                    localStorage.removeItem('vbron_token');
+                    this.token = null;
+                    this.user = null;
+                    this.tenant = null;
+                },
+
+                authHeaders() {
+                    return { 'Authorization': 'Bearer ' + this.token, 'Content-Type': 'application/json' };
+                },
+
+                async loadAll() {
+                    await Promise.all([this.loadBookings(), this.loadRooms()]);
+                },
+
+                async loadBookings() {
+                    try {
+                        const url = `${API}/api/admin/bookings${this.filterStatus ? '?status=' + this.filterStatus : ''}`;
+                        const res = await fetch(url, { headers: this.authHeaders() });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        this.bookings = data.bookings || [];
+                        this.computeStats();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                async loadRooms() {
+                    try {
+                        const slug = this.tenant?.slug || 'demo';
+                        const res = await fetch(`${API}/api/rooms?slug=${slug}`);
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        this.rooms = data.rooms || [];
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                computeStats() {
+                    this.stats = { new: 0, confirmed: 0, paid: 0, cancelled: 0 };
+                    for (const b of this.bookings) {
+                        if (b.status in this.stats) this.stats[b.status]++;
+                    }
+                },
+
+                setFilter(status) {
+                    this.filterStatus = status;
+                    this.loadBookings();
+                },
+
+                async updateStatus(id, status) {
+                    if (!confirm('Изменить статус брони на "' + this.statusLabel(status) + '"?')) return;
+                    try {
+                        const res = await fetch(`${API}/api/admin/bookings/${id}`, {
+                            method: 'PATCH',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify({ status })
+                        });
+                        if (!res.ok) {
+                            alert('Не удалось обновить статус');
+                            return;
+                        }
+                        await this.loadBookings();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+
+                openManualModal() {
+                    this.manual = { room_id: '', guest_name: '', guest_phone: '', check_in: '', check_out: '', notes: '' };
+                    this.manualError = '';
+                    this.manualModal = true;
+                },
+
+                async submitManual() {
+                    this.manualError = '';
+                    try {
+                        const res = await fetch(`${API}/api/admin/bookings/manual`, {
+                            method: 'POST',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify(this.manual)
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                            const map = {
+                                dates_unavailable: 'На эти даты номер занят',
+                                invalid_dates: 'Проверьте даты',
+                                room_not_found: 'Номер не найден'
+                            };
+                            this.manualError = map[data.error] || 'Ошибка создания брони';
+                            return;
+                        }
+                        this.manualModal = false;
+                        await this.loadBookings();
+                    } catch (e) {
+                        this.manualError = 'Ошибка сети';
+                    }
+                },
+
+                formatPrice(p) {
+                    return new Intl.NumberFormat('ru-RU').format(Math.round(p)) + ' ₸';
+                },
+                formatDate(d) {
+                    return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                },
+                formatDateShort(d) {
+                    return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                },
+                statusLabel(s) {
+                    return { new: 'Новая', confirmed: 'Подтверждена', paid: 'Оплачено', cancelled: 'Отменена', completed: 'Завершена', no_show: 'Не пришёл' }[s] || s;
+                },
+                statusClass(s) {
+                    return {
+                        new: 'bg-blue-100 text-blue-800',
+                        confirmed: 'bg-green-100 text-green-800',
+                        paid: 'bg-emerald-100 text-emerald-800',
+                        cancelled: 'bg-gray-100 text-gray-600',
+                        completed: 'bg-gray-100 text-gray-700',
+                        no_show: 'bg-red-100 text-red-700'
+                    }[s] || 'bg-gray-100 text-gray-700';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

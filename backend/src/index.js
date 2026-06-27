@@ -7,6 +7,8 @@ import healthRouter from './routes/health.js';
 import tenantRouter from './routes/tenant.js';
 import roomsRouter from './routes/rooms.js';
 import bookingsRouter from './routes/bookings.js';
+import authRouter from './routes/auth.js';
+import adminBookingsRouter from './routes/admin-bookings.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -36,6 +38,8 @@ app.use('/api/health', healthRouter);
 app.use('/api/tenant', tenantRouter);
 app.use('/api/rooms', roomsRouter);
 app.use('/api/bookings', bookingsRouter);
+app.use('/api/admin', authRouter);
+app.use('/api/admin/bookings', adminBookingsRouter);
 
 // Корень API — для проверки
 app.get('/', (req, res) => {

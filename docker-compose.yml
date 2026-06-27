@@ -33,6 +33,7 @@ services:
       TZ: Asia/Almaty
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_DEFAULT_CHAT_ID: ${TELEGRAM_DEFAULT_CHAT_ID}
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       - vbron-postgres
     networks:
@@ -45,6 +46,14 @@ services:
     restart: unless-stopped
     volumes:
       - ./tenant-site:/usr/share/nginx/html:ro
+    networks:
+      - proxy_default
+  vbron-admin:
+    image: nginx:alpine
+    container_name: vbron_admin
+    restart: unless-stopped
+    volumes:
+      - ./admin:/usr/share/nginx/html:ro
     networks:
       - proxy_default
 
