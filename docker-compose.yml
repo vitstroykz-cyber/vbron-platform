@@ -15,10 +15,41 @@ services:
       - ./db-init:/docker-entrypoint-initdb.d
     networks:
       - vbron_internal
-    # Порт наружу не пробрасываем — БД доступна только внутри Docker
-    # Если понадобится подключиться извне для отладки — добавим временно
+
+  vbron-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vbron_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      POSTGRES_HOST: vbron_postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: vbron
+      POSTGRES_USER: vbron_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Almaty
+    depends_on:
+      - vbron-postgres
+    networks:
+      - vbron_internal
+      - proxy_default
+
+  vbron-test-site:
+    image: nginx:alpine
+    container_name: vbron_test_site
+    restart: unless-stopped
+    volumes:
+      - ./test-site:/usr/share/nginx/html:ro
+    networks:
+      - vbron_internal
+      - proxy_default
 
 networks:
   vbron_internal:
     name: vbron_internal
     driver: bridge
+  proxy_default:
+    external: true
