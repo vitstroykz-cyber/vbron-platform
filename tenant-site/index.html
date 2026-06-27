@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка...</title>
+    <meta name="description" content="Зона отдыха — онлайн-бронирование">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+        .hero-gradient {
+            background: linear-gradient(135deg, #1e3a8a 0%, #0f766e 100%);
+        }
+        .room-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .room-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+        }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="siteData()" x-init="init()">
+
+    <!-- Загрузка -->
+    <div x-show="loading" class="min-h-screen flex items-center justify-center">
+        <div class="text-center">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600 mb-4"></div>
+            <p class="text-gray-600">Загрузка...</p>
+        </div>
+    </div>
+
+    <!-- Ошибка -->
+    <div x-show="error" x-cloak class="min-h-screen flex items-center justify-center p-4">
+        <div class="text-center max-w-md">
+            <div class="text-6xl mb-4">😕</div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Что-то пошло не так</h1>
+            <p class="text-gray-600" x-text="error"></p>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div x-show="!loading && !error" x-cloak>
+
+        <!-- Hero -->
+        <header class="hero-gradient text-white">
+            <nav class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="font-bold text-xl" x-text="tenant?.name || ''"></div>
+                <a :href="'tel:' + (tenant?.owner_phone || '')"
+                   class="text-sm hover:text-blue-200 transition"
+                   x-text="tenant?.owner_phone || ''"></a>
+            </nav>
+            <div class="max-w-6xl mx-auto px-6 py-20 text-center">
+                <h1 class="text-4xl md:text-6xl font-bold mb-6" x-text="tenant?.name || ''"></h1>
+                <p class="text-xl mb-8 opacity-90">Уютный отдых, тёплый приём, лучшие воспоминания</p>
+                <a href="#rooms"
+                   class="inline-block bg-white text-blue-900 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition">
+                    Выбрать номер
+                </a>
+            </div>
+        </header>
+
+        <!-- О нас -->
+        <section class="max-w-6xl mx-auto px-6 py-16 text-center">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">О нас</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto text-lg">
+                Мы создаём атмосферу настоящего отдыха для вас и вашей семьи.
+                Уютные домики, чистый воздух, природа вокруг — всё для того, чтобы вы могли расслабиться и набраться сил.
+            </p>
+        </section>
+
+        <!-- Номера -->
+        <section id="rooms" class="bg-white py-16">
+            <div class="max-w-6xl mx-auto px-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-12 text-center">Наши номера</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <template x-for="room in rooms" :key="room.id">
+                        <div class="room-card bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
+                            <!-- Заглушка вместо фото -->
+                            <div class="h-56 bg-gradient-to-br from-blue-100 to-teal-100 flex items-center justify-center">
+                                <span class="text-6xl">
+                                    <template x-if="room.type === 'cottage'">🏡</template>
+                                    <template x-if="room.type === 'sauna'">🧖</template>
+                                    <template x-if="room.type === 'gazebo'">⛱️</template>
+                                    <template x-if="!['cottage','sauna','gazebo'].includes(room.type)">🏠</template>
+                                </span>
+                            </div>
+                            <div class="p-6">
+                                <h3 class="text-xl font-bold text-gray-900 mb-2" x-text="room.name"></h3>
+                                <p class="text-gray-600 text-sm mb-4" x-text="room.description"></p>
+                                <div class="flex justify-between items-center mb-4 text-sm text-gray-500">
+                                    <span>👥 До <span x-text="room.capacity"></span> чел.</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <span class="text-2xl font-bold text-blue-900"
+                                              x-text="formatPrice(room.price_per_day)"></span>
+                                        <span class="text-gray-500 text-sm"> / сутки</span>
+                                    </div>
+                                    <button @click="selectRoom(room)"
+                                            class="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition text-sm font-medium">
+                                        Забронировать
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </section>
+
+        <!-- Форма брони (модалка) -->
+        <div x-show="bookingModal" x-cloak
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+             @click.self="bookingModal = false">
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-900">Бронирование</h3>
+                        <p class="text-gray-600 text-sm mt-1" x-text="selectedRoom?.name"></p>
+                    </div>
+                    <button @click="bookingModal = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                </div>
+
+                <form @submit.prevent="submitBooking()" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ваше имя</label>
+                        <input type="text" x-model="booking.name" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
+                        <input type="tel" x-model="booking.phone" required placeholder="+7..."
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Заезд</label>
+                            <input type="date" x-model="booking.checkIn" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Выезд</label>
+                            <input type="date" x-model="booking.checkOut" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    <button type="submit"
+                            class="w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition">
+                        Отправить заявку
+                    </button>
+                    <p class="text-xs text-gray-500 text-center">
+                        После отправки заявки мы свяжемся с вами для подтверждения брони
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Футер -->
+        <footer class="bg-gray-900 text-gray-400 py-12">
+            <div class="max-w-6xl mx-auto px-6 text-center">
+                <div class="text-white text-xl font-bold mb-4" x-text="tenant?.name || ''"></div>
+                <p class="mb-2">Контактный телефон:
+                    <a :href="'tel:' + (tenant?.owner_phone || '')"
+                       class="text-white hover:text-blue-300"
+                       x-text="tenant?.owner_phone || ''"></a>
+                </p>
+                <p class="text-sm mt-6">© 2026. Сайт сделан на платформе vbron.kz</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function siteData() {
+            return {
+                loading: true,
+                error: null,
+                tenant: null,
+                rooms: [],
+                bookingModal: false,
+                selectedRoom: null,
+                booking: { name: '', phone: '', checkIn: '', checkOut: '' },
+
+                async init() {
+                    try {
+                        // API_HOST настраивается через query или дефолт
+                        const API = 'https://api.vbron.kz';
+                        // Передаём свой Host явно через query-параметр, потому что
+                        // CORS-запрос от поддомена клиента не несёт правильный Host для бэка.
+                        const slug = window.location.hostname.split('.')[0];
+
+                        // Бэкенд определяет tenant из Host автоматически.
+                        // Но мы ходим с demo.vbron.kz на api.vbron.kz — это другой Host.
+                        // Решение: тут передаём slug в URL, бэкенд научим читать его (день 7.1).
+
+                        const [tenantRes, roomsRes] = await Promise.all([
+                            fetch(`${API}/api/tenant?slug=${slug}`),
+                            fetch(`${API}/api/rooms?slug=${slug}`)
+                        ]);
+
+                        if (!tenantRes.ok) throw new Error('Клиент не найден');
+
+                        this.tenant = await tenantRes.json();
+                        const roomsData = await roomsRes.json();
+                        this.rooms = roomsData.rooms || [];
+
+                        document.title = this.tenant.name;
+                        this.loading = false;
+                    } catch (e) {
+                        console.error(e);
+                        this.error = 'Не удалось загрузить данные. Попробуйте обновить страницу.';
+                        this.loading = false;
+                    }
+                },
+
+                formatPrice(price) {
+                    return new Intl.NumberFormat('ru-RU').format(Math.round(price)) + ' ₸';
+                },
+
+                selectRoom(room) {
+                    this.selectedRoom = room;
+                    this.bookingModal = true;
+                },
+
+                async submitBooking() {
+                    alert('Спасибо! Заявка отправлена.\n\nВ реальной версии данные уйдут в админку и в Telegram.\n\n(Это будет реализовано в день 8)');
+                    this.bookingModal = false;
+                    this.booking = { name: '', phone: '', checkIn: '', checkOut: '' };
+                }
+            }
+        }
+    </script>
+</body>
+</html>

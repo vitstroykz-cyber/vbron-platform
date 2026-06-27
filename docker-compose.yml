@@ -37,14 +37,13 @@ services:
       - vbron_internal
       - proxy_default
 
-  vbron-test-site:
+  vbron-tenant-site:
     image: nginx:alpine
-    container_name: vbron_test_site
+    container_name: vbron_tenant_site
     restart: unless-stopped
     volumes:
-      - ./test-site:/usr/share/nginx/html:ro
+      - ./tenant-site:/usr/share/nginx/html:ro
     networks:
-      - vbron_internal
       - proxy_default
 
 networks:

@@ -5,17 +5,22 @@ import { query } from '../db/pool.js';
 const tenantCache = new Map();
 const CACHE_TTL_MS = 60_000;
 
-function extractSlug(hostHeader) {
+function extractSlug(req) {
+    // 1) Сначала проверяем query-параметр (для cross-origin запросов с сайта клиента к api.vbron.kz)
+    if (req.query && req.query.slug) {
+        const slug = String(req.query.slug).toLowerCase().trim();
+        if (/^[a-z0-9-]+$/.test(slug)) return slug;
+    }
+
+    // 2) Иначе пытаемся вытащить из Host (для прямых запросов на client.vbron.kz)
+    const hostHeader = req.headers.host;
     if (!hostHeader) return null;
 
-    // Убираем порт если есть (host:8080 → host)
     const hostname = hostHeader.split(':')[0].toLowerCase();
 
-    // vbron.kz, www.vbron.kz, admin.vbron.kz, api.vbron.kz — не tenant'ы
     const reserved = new Set(['vbron.kz', 'www.vbron.kz', 'admin.vbron.kz', 'api.vbron.kz']);
     if (reserved.has(hostname)) return null;
 
-    // Достаём первый сегмент: aquapark.vbron.kz → aquapark
     const match = hostname.match(/^([^.]+)\.vbron\.kz$/);
     return match ? match[1] : null;
 }
@@ -45,7 +50,7 @@ async function findTenantBySlug(slug) {
 
 export async function resolveTenant(req, res, next) {
     try {
-        const slug = extractSlug(req.headers.host);
+        const slug = extractSlug(req);
 
         if (!slug) {
             // Это запрос к api.vbron.kz, vbron.kz и т.п. — не tenant-запрос.
