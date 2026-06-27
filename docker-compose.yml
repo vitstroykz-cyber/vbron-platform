@@ -31,6 +31,8 @@ services:
       POSTGRES_USER: vbron_user
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       TZ: Asia/Almaty
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_DEFAULT_CHAT_ID: ${TELEGRAM_DEFAULT_CHAT_ID}
     depends_on:
       - vbron-postgres
     networks:

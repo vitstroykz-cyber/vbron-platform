@@ -224,12 +224,48 @@
                     this.selectedRoom = room;
                     this.bookingModal = true;
                 },
-
                 async submitBooking() {
-                    alert('Спасибо! Заявка отправлена.\n\nВ реальной версии данные уйдут в админку и в Telegram.\n\n(Это будет реализовано в день 8)');
-                    this.bookingModal = false;
-                    this.booking = { name: '', phone: '', checkIn: '', checkOut: '' };
-                }
+                    if (!this.selectedRoom) return;
+
+                    const API = 'https://api.vbron.kz';
+                    const slug = window.location.hostname.split('.')[0];
+
+                    try {
+                        const res = await fetch(`${API}/api/bookings?slug=${slug}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                room_id: this.selectedRoom.id,
+                                guest_name: this.booking.name,
+                                guest_phone: this.booking.phone,
+                                check_in: this.booking.checkIn,
+                                check_out: this.booking.checkOut
+                            })
+                        });
+
+                        const data = await res.json();
+
+                        if (!res.ok) {
+                            if (data.error === 'dates_unavailable') {
+                                alert('К сожалению, на выбранные даты номер уже забронирован. Попробуйте другие даты.');
+                            } else if (data.error === 'invalid_dates') {
+                                alert('Проверьте даты заезда и выезда.');
+                            } else if (data.error === 'invalid_phone') {
+                                alert('Проверьте номер телефона.');
+                            } else {
+                                alert('Не удалось отправить заявку. Попробуйте позже.');
+                            }
+                            return;
+                        }
+
+                        alert(`✅ Заявка отправлена!\n\nНомер: ${this.selectedRoom.name}\nСумма: ${this.formatPrice(data.booking.total_price)}\n\nМы свяжемся с вами в течение часа для подтверждения.`);
+                        this.bookingModal = false;
+                        this.booking = { name: '', phone: '', checkIn: '', checkOut: '' };
+                    } catch (e) {
+                        console.error(e);
+                        alert('Ошибка сети. Проверьте подключение.');
+                    }
+                }                }
             }
         }
     </script>

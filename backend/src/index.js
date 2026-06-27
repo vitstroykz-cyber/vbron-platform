@@ -6,6 +6,7 @@ import { resolveTenant } from './middleware/tenant.js';
 import healthRouter from './routes/health.js';
 import tenantRouter from './routes/tenant.js';
 import roomsRouter from './routes/rooms.js';
+import bookingsRouter from './routes/bookings.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -34,6 +35,7 @@ app.use((req, res, next) => {
 app.use('/api/health', healthRouter);
 app.use('/api/tenant', tenantRouter);
 app.use('/api/rooms', roomsRouter);
+app.use('/api/bookings', bookingsRouter);
 
 // Корень API — для проверки
 app.get('/', (req, res) => {
