@@ -52,71 +52,95 @@
     <!-- Дашборд -->
     <div x-show="!loading && user" x-cloak>
         <!-- Header -->
-        <header class="bg-white border-b border-gray-200">
-            <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-                <div>
-                    <div class="font-bold text-lg text-gray-900" x-text="tenant?.name || 'vbron'"></div>
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="min-w-0 flex-1 pr-3">
+                    <div class="font-bold text-base text-gray-900 truncate" x-text="tenant?.name || 'vbron'"></div>
                     <div class="text-xs text-gray-500" x-text="'План: ' + (tenant?.plan || '')"></div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-600" x-text="user?.full_name || user?.email"></span>
+                <div class="flex items-center gap-3 shrink-0">
+                    <button @click="openManualModal()"
+                            class="bg-blue-900 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-800">
+                        + Бронь
+                    </button>
                     <button @click="logout()" class="text-sm text-gray-500 hover:text-gray-700">Выход</button>
                 </div>
             </div>
         </header>
 
-        <!-- Контент -->
-        <main class="max-w-7xl mx-auto px-6 py-6">
+        <main class="max-w-7xl mx-auto px-4 py-4">
 
-            <!-- Статистика -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white rounded-xl p-4 shadow-sm">
-                    <div class="text-xs text-gray-500">Новые</div>
-                    <div class="text-2xl font-bold text-blue-600" x-text="stats.new"></div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-sm">
-                    <div class="text-xs text-gray-500">Подтверждённые</div>
-                    <div class="text-2xl font-bold text-green-600" x-text="stats.confirmed"></div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-sm">
-                    <div class="text-xs text-gray-500">Оплачено</div>
-                    <div class="text-2xl font-bold text-emerald-600" x-text="stats.paid"></div>
-                </div>
-                <div class="bg-white rounded-xl p-4 shadow-sm">
-                    <div class="text-xs text-gray-500">Отменено</div>
-                    <div class="text-2xl font-bold text-gray-400" x-text="stats.cancelled"></div>
-                </div>
-            </div>
-
-            <!-- Фильтры + кнопка ручной брони -->
-            <div class="bg-white rounded-xl p-4 shadow-sm mb-4 flex flex-wrap gap-2 items-center justify-between">
-                <div class="flex flex-wrap gap-2">
-                    <button @click="setFilter('')" :class="filterStatus === '' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'"
-                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Все</button>
-                    <button @click="setFilter('new')" :class="filterStatus === 'new' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'"
-                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Новые</button>
-                    <button @click="setFilter('confirmed')" :class="filterStatus === 'confirmed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'"
-                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Подтверждённые</button>
-                    <button @click="setFilter('paid')" :class="filterStatus === 'paid' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'"
-                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Оплачено</button>
-                    <button @click="setFilter('cancelled')" :class="filterStatus === 'cancelled' ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-700'"
-                            class="px-3 py-1.5 rounded-lg text-sm font-medium">Отменено</button>
-                </div>
-                <button @click="openManualModal()" class="bg-blue-900 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-800">
-                    + Ручная бронь
+            <!-- Статистика-фильтры -->
+            <div class="grid grid-cols-4 gap-2 mb-4">
+                <button @click="setFilter('new')"
+                        :class="filter === 'new' ? 'ring-2 ring-blue-500 bg-blue-50' : 'bg-white hover:bg-gray-50'"
+                        class="rounded-xl p-3 shadow-sm transition text-left">
+                    <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Новые</div>
+                    <div class="text-xl sm:text-2xl font-bold text-blue-600" x-text="stats.new"></div>
+                </button>
+                <button @click="setFilter('confirmed')"
+                        :class="filter === 'confirmed' ? 'ring-2 ring-green-500 bg-green-50' : 'bg-white hover:bg-gray-50'"
+                        class="rounded-xl p-3 shadow-sm transition text-left">
+                    <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Подтв.</div>
+                    <div class="text-xl sm:text-2xl font-bold text-green-600" x-text="stats.confirmed"></div>
+                </button>
+                <button @click="setFilter('paid')"
+                        :class="filter === 'paid' ? 'ring-2 ring-emerald-500 bg-emerald-50' : 'bg-white hover:bg-gray-50'"
+                        class="rounded-xl p-3 shadow-sm transition text-left">
+                    <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Оплачено</div>
+                    <div class="text-xl sm:text-2xl font-bold text-emerald-600" x-text="stats.paid"></div>
+                </button>
+                <button @click="setFilter('cancelled')"
+                        :class="filter === 'cancelled' ? 'ring-2 ring-gray-400 bg-gray-100' : 'bg-white hover:bg-gray-50'"
+                        class="rounded-xl p-3 shadow-sm transition text-left">
+                    <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Отмена</div>
+                    <div class="text-xl sm:text-2xl font-bold text-gray-400" x-text="stats.cancelled"></div>
                 </button>
             </div>
 
-            <!-- Список броней -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div x-show="bookings.length === 0" x-cloak class="p-8 text-center text-gray-500">
-                    Заявок пока нет
-                </div>
+            <!-- Подпись текущего фильтра -->
+            <div class="text-sm text-gray-500 mb-3 px-1">
+                Показано: <span class="font-medium text-gray-700" x-text="filterLabel(filter)"></span>
+                (<span x-text="bookings.length"></span>)
+            </div>
 
-                <table x-show="bookings.length > 0" x-cloak class="w-full">
+            <!-- Пусто -->
+            <div x-show="bookings.length === 0" x-cloak class="bg-white rounded-xl p-8 text-center text-gray-500 shadow-sm">
+                В этой категории пока пусто
+            </div>
+
+            <!-- МОБАЙЛ: карточки -->
+            <div x-show="bookings.length > 0" x-cloak class="sm:hidden space-y-2">
+                <template x-for="b in bookings" :key="b.id">
+                    <button @click="openBooking(b)"
+                            class="block w-full bg-white rounded-xl shadow-sm hover:shadow-md transition text-left p-4">
+                        <div class="flex justify-between items-start gap-2 mb-2">
+                            <div class="min-w-0 flex-1">
+                                <div class="font-semibold text-gray-900 truncate" x-text="b.guest_name"></div>
+                                <div class="text-sm text-gray-500 truncate" x-text="b.room_name"></div>
+                            </div>
+                            <span class="px-2 py-1 rounded-md text-xs font-medium shrink-0"
+                                  :class="statusClass(b.status)" x-text="statusLabel(b.status)"></span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <div class="text-gray-600">
+                                <span x-text="formatDateShort(b.check_in)"></span>
+                                <span class="text-gray-400 mx-1">→</span>
+                                <span x-text="formatDateShort(b.check_out)"></span>
+                                <span class="text-gray-400 ml-2" x-text="'(' + nightsCount(b) + ' н.)'"></span>
+                            </div>
+                            <div class="font-semibold text-gray-900" x-text="formatPrice(b.total_price)"></div>
+                        </div>
+                    </button>
+                </template>
+            </div>
+
+            <!-- ДЕСКТОП: таблица -->
+            <div x-show="bookings.length > 0" x-cloak class="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden">
+                <table class="w-full">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr class="text-left text-xs text-gray-500 uppercase">
-                            <th class="px-4 py-3">Дата</th>
+                            <th class="px-4 py-3">Создана</th>
                             <th class="px-4 py-3">Гость</th>
                             <th class="px-4 py-3">Номер</th>
                             <th class="px-4 py-3">Период</th>
@@ -127,11 +151,12 @@
                     </thead>
                     <tbody>
                         <template x-for="b in bookings" :key="b.id">
-                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" @click="openBooking(b)">
                                 <td class="px-4 py-3 text-sm text-gray-500" x-text="formatDate(b.created_at)"></td>
                                 <td class="px-4 py-3">
                                     <div class="font-medium text-gray-900" x-text="b.guest_name"></div>
-                                    <a :href="'tel:' + b.guest_phone" class="text-xs text-blue-600 hover:underline" x-text="b.guest_phone"></a>
+                                    <a :href="'tel:' + b.guest_phone" @click.stop
+                                       class="text-xs text-blue-600 hover:underline" x-text="b.guest_phone"></a>
                                 </td>
                                 <td class="px-4 py-3 text-sm" x-text="b.room_name"></td>
                                 <td class="px-4 py-3 text-sm text-gray-600">
@@ -143,7 +168,7 @@
                                     <span class="px-2 py-1 rounded-md text-xs font-medium"
                                           :class="statusClass(b.status)" x-text="statusLabel(b.status)"></span>
                                 </td>
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-3" @click.stop>
                                     <div class="flex gap-1 flex-wrap">
                                         <button x-show="b.status === 'new'" @click="updateStatus(b.id, 'confirmed')"
                                                 class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">Подтвердить</button>
@@ -160,13 +185,88 @@
             </div>
         </main>
 
+        <!-- Модалка просмотра/действий -->
+        <div x-show="bookingModal" x-cloak @click.self="bookingModal = false"
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+            <div class="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="min-w-0">
+                        <div class="text-xs text-gray-500 mb-1">Бронь №<span x-text="current?.id"></span></div>
+                        <h3 class="text-xl font-bold text-gray-900" x-text="current?.guest_name"></h3>
+                    </div>
+                    <button @click="bookingModal = false" class="text-gray-400 hover:text-gray-600 text-3xl leading-none shrink-0">×</button>
+                </div>
+
+                <div class="space-y-3 text-sm mb-5">
+                    <div class="flex justify-between gap-2">
+                        <span class="text-gray-500">Телефон</span>
+                        <a :href="'tel:' + current?.guest_phone" class="text-blue-600 font-medium" x-text="current?.guest_phone"></a>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <span class="text-gray-500">Номер</span>
+                        <span class="font-medium text-right" x-text="current?.room_name"></span>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <span class="text-gray-500">Заезд</span>
+                        <span class="font-medium" x-text="current ? formatDate(current.check_in) : ''"></span>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <span class="text-gray-500">Выезд</span>
+                        <span class="font-medium" x-text="current ? formatDate(current.check_out) : ''"></span>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <span class="text-gray-500">Ночей</span>
+                        <span class="font-medium" x-text="current ? nightsCount(current) : ''"></span>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <span class="text-gray-500">Сумма</span>
+                        <span class="font-bold text-lg" x-text="current ? formatPrice(current.total_price) : ''"></span>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <span class="text-gray-500">Статус</span>
+                        <span class="px-2 py-1 rounded-md text-xs font-medium"
+                              :class="current ? statusClass(current.status) : ''"
+                              x-text="current ? statusLabel(current.status) : ''"></span>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <span class="text-gray-500">Создана</span>
+                        <span class="text-gray-700" x-text="current ? formatDate(current.created_at) : ''"></span>
+                    </div>
+                    <div x-show="current?.notes" class="pt-2 border-t border-gray-100">
+                        <div class="text-gray-500 text-xs mb-1">Комментарий</div>
+                        <div class="text-gray-700" x-text="current?.notes"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <a x-show="current" :href="'tel:' + current?.guest_phone"
+                       class="block w-full bg-gray-100 text-gray-900 text-center py-2.5 rounded-lg font-medium hover:bg-gray-200">
+                        📞 Позвонить
+                    </a>
+                    <button x-show="current?.status === 'new'" @click="updateStatus(current.id, 'confirmed')"
+                            class="w-full bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700">
+                        ✓ Подтвердить
+                    </button>
+                    <button x-show="current?.status === 'confirmed'" @click="updateStatus(current.id, 'paid')"
+                            class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700">
+                        💵 Отметить оплату
+                    </button>
+                    <button x-show="current && current.status !== 'cancelled' && current.status !== 'completed'"
+                            @click="updateStatus(current.id, 'cancelled')"
+                            class="w-full bg-white border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50">
+                        Отменить бронь
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Модалка ручной брони -->
         <div x-show="manualModal" x-cloak @click.self="manualModal = false"
-             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div class="bg-white rounded-2xl p-6 max-w-md w-full max-h-screen overflow-y-auto">
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+            <div class="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-900">Ручная бронь</h3>
-                    <button @click="manualModal = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                    <button @click="manualModal = false" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">×</button>
                 </div>
                 <form @submit.prevent="submitManual()" class="space-y-3">
                     <div>
@@ -222,18 +322,21 @@
                 loginError: '',
                 loggingIn: false,
                 bookings: [],
+                allBookings: [],
                 rooms: [],
-                filterStatus: '',
+                filter: 'new',
                 stats: { new: 0, confirmed: 0, paid: 0, cancelled: 0 },
+                bookingModal: false,
+                current: null,
                 manualModal: false,
                 manual: { room_id: '', guest_name: '', guest_phone: '', check_in: '', check_out: '', notes: '' },
                 manualError: '',
+                pollTimer: null,
+                onVisibilityChange: null,
 
                 async init() {
                     this.token = localStorage.getItem('vbron_token');
-                    if (this.token) {
-                        await this.loadMe();
-                    }
+                    if (this.token) await this.loadMe();
                     this.loading = false;
                 },
 
@@ -250,9 +353,7 @@
                         this.tenant = data.tenant;
                         await this.loadAll();
                         this.startPolling();
-                    } catch (e) {
-                        console.error(e);
-                    }
+                    } catch (e) { console.error(e); }
                 },
 
                 async login() {
@@ -292,47 +393,18 @@
                 },
 
                 async loadAll() {
-                    pollTimer: null,
                     await Promise.all([this.loadBookings(), this.loadRooms()]);
                 },
-                startPolling() {
-                    // Не плодим таймеры
-                    if (this.pollTimer) return;
-                    // Раз в 15 секунд тихо обновляем брони
-                    this.pollTimer = setInterval(() => {
-                        if (document.visibilityState === 'visible') {
-                            this.loadBookings();
-                        }
-                    }, 15000);
-                    // При возврате во вкладку — обновляем сразу
-                    document.addEventListener('visibilitychange', this.onVisibilityChange = () => {
-                        if (document.visibilityState === 'visible') {
-                            this.loadBookings();
-                        }
-                    });
-                },
 
-                stopPolling() {
-                    if (this.pollTimer) {
-                        clearInterval(this.pollTimer);
-                        this.pollTimer = null;
-                    }
-                    if (this.onVisibilityChange) {
-                        document.removeEventListener('visibilitychange', this.onVisibilityChange);
-                        this.onVisibilityChange = null;
-                    }
-                },
                 async loadBookings() {
                     try {
-                        const url = `${API}/api/admin/bookings${this.filterStatus ? '?status=' + this.filterStatus : ''}`;
-                        const res = await fetch(url, { headers: this.authHeaders() });
+                        const res = await fetch(`${API}/api/admin/bookings`, { headers: this.authHeaders() });
                         if (!res.ok) return;
                         const data = await res.json();
-                        this.bookings = data.bookings || [];
+                        this.allBookings = data.bookings || [];
                         this.computeStats();
-                    } catch (e) {
-                        console.error(e);
-                    }
+                        this.applyFilter();
+                    } catch (e) { console.error(e); }
                 },
 
                 async loadRooms() {
@@ -342,21 +414,32 @@
                         if (!res.ok) return;
                         const data = await res.json();
                         this.rooms = data.rooms || [];
-                    } catch (e) {
-                        console.error(e);
-                    }
+                    } catch (e) { console.error(e); }
                 },
 
                 computeStats() {
                     this.stats = { new: 0, confirmed: 0, paid: 0, cancelled: 0 };
-                    for (const b of this.bookings) {
+                    for (const b of this.allBookings) {
                         if (b.status in this.stats) this.stats[b.status]++;
                     }
                 },
 
-                setFilter(status) {
-                    this.filterStatus = status;
-                    this.loadBookings();
+                applyFilter() {
+                    this.bookings = this.allBookings.filter(b => b.status === this.filter);
+                },
+
+                setFilter(f) {
+                    this.filter = f;
+                    this.applyFilter();
+                },
+
+                filterLabel(f) {
+                    return { new: 'Новые', confirmed: 'Подтверждённые', paid: 'Оплаченные', cancelled: 'Отменённые' }[f] || f;
+                },
+
+                openBooking(b) {
+                    this.current = b;
+                    this.bookingModal = true;
                 },
 
                 async updateStatus(id, status) {
@@ -367,14 +450,11 @@
                             headers: this.authHeaders(),
                             body: JSON.stringify({ status })
                         });
-                        if (!res.ok) {
-                            alert('Не удалось обновить статус');
-                            return;
-                        }
+                        if (!res.ok) { alert('Не удалось обновить статус'); return; }
+                        this.bookingModal = false;
+                        this.current = null;
                         await this.loadBookings();
-                    } catch (e) {
-                        console.error(e);
-                    }
+                    } catch (e) { console.error(e); }
                 },
 
                 openManualModal() {
@@ -403,16 +483,36 @@
                         }
                         this.manualModal = false;
                         await this.loadBookings();
-                    } catch (e) {
-                        this.manualError = 'Ошибка сети';
+                    } catch (e) { this.manualError = 'Ошибка сети'; }
+                },
+
+                startPolling() {
+                    if (this.pollTimer) return;
+                    this.pollTimer = setInterval(() => {
+                        if (document.visibilityState === 'visible') this.loadBookings();
+                    }, 15000);
+                    this.onVisibilityChange = () => {
+                        if (document.visibilityState === 'visible') this.loadBookings();
+                    };
+                    document.addEventListener('visibilitychange', this.onVisibilityChange);
+                },
+
+                stopPolling() {
+                    if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
+                    if (this.onVisibilityChange) {
+                        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+                        this.onVisibilityChange = null;
                     }
                 },
 
+                nightsCount(b) {
+                    return Math.ceil((new Date(b.check_out) - new Date(b.check_in)) / 86400000);
+                },
                 formatPrice(p) {
                     return new Intl.NumberFormat('ru-RU').format(Math.round(p)) + ' ₸';
                 },
                 formatDate(d) {
-                    return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 },
                 formatDateShort(d) {
                     return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
