@@ -174,5 +174,45 @@ router.post('/manual', async (req, res) => {
         res.status(500).json({ error: 'internal_error' });
     }
 });
+// GET /api/admin/calendar?from=2026-07-01&to=2026-07-30
+// Отдаёт все номера + брони в указанном диапазоне для отрисовки шахматки
+router.get('/calendar/data', async (req, res) => {
+    // Заметь: путь /calendar/data чтобы не конфликтовал с :id роутом выше
+    try {
+        const { from, to } = req.query;
+        if (!from || !to) {
+            return res.status(400).json({ error: 'from_to_required' });
+        }
+
+        const [roomsResult, bookingsResult] = await Promise.all([
+            query(
+                `SELECT id, name, type, capacity, price_per_day, display_order
+                 FROM rooms
+                 WHERE tenant_id = $1 AND is_active = TRUE
+                 ORDER BY display_order, id`,
+                [req.tenant.id]
+            ),
+            query(
+                `SELECT id, room_id, guest_name, guest_phone, check_in, check_out, status, total_price, source
+                 FROM bookings
+                 WHERE tenant_id = $1
+                   AND status NOT IN ('cancelled', 'no_show')
+                   AND check_in < $3
+                   AND check_out > $2`,
+                [req.tenant.id, from, to]
+            )
+        ]);
+
+        res.json({
+            rooms: roomsResult.rows,
+            bookings: bookingsResult.rows,
+            from,
+            to
+        });
+    } catch (err) {
+        console.error('GET /admin/calendar error:', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
 
 export default router;

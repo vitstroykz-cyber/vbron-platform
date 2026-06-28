@@ -3,12 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📋%3C/text%3E%3C/svg%3E">
     <title>vbron — Админ-панель</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
         [x-cloak] { display: none !important; }
+        .cal-grid {
+            display: grid;
+            grid-template-columns: 160px repeat(var(--days), minmax(36px, 1fr));
+        }
+        .cal-cell {
+            border-right: 1px solid #f3f4f6;
+            border-bottom: 1px solid #f3f4f6;
+            min-height: 40px;
+            position: relative;
+        }
+        .cal-header {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 5;
+            font-size: 11px;
+            text-align: center;
+            padding: 6px 2px;
+            border-right: 1px solid #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .cal-header.weekend { background: #fef9c3; }
+        .cal-header.today { background: #dbeafe; font-weight: 700; color: #1e40af; }
+        .cal-room {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 4;
+            padding: 8px 12px;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .cal-room-header {
+            position: sticky;
+            left: 0;
+            top: 0;
+            background: #f9fafb;
+            z-index: 6;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .booking-bar {
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            line-height: 1.2;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            transition: filter 0.15s;
+        }
+        .booking-bar:hover { filter: brightness(1.08); }
+        .booking-bar.status-new { background: #3b82f6; }
+        .booking-bar.status-confirmed { background: #16a34a; }
+        .booking-bar.status-paid { background: #059669; }
+        .cal-cell.weekend { background: #fefce8; }
+        .cal-cell.today { background: #eff6ff; }
+        .cal-cell:hover:not(.has-booking) { background: #f3f4f6; cursor: pointer; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen" x-data="adminApp()" x-init="init()">
@@ -52,13 +121,13 @@
     <!-- Дашборд -->
     <div x-show="!loading && user" x-cloak>
         <!-- Header -->
-        <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-20">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div class="min-w-0 flex-1 pr-3">
                     <div class="font-bold text-base text-gray-900 truncate" x-text="tenant?.name || 'vbron'"></div>
                     <div class="text-xs text-gray-500" x-text="'План: ' + (tenant?.plan || '')"></div>
                 </div>
-                <div class="flex items-center gap-3 shrink-0">
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0">
                     <button @click="openManualModal()"
                             class="bg-blue-900 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-800">
                         + Бронь
@@ -66,126 +135,203 @@
                     <button @click="logout()" class="text-sm text-gray-500 hover:text-gray-700">Выход</button>
                 </div>
             </div>
+            <!-- Вкладки -->
+            <div class="max-w-7xl mx-auto px-4 border-t border-gray-100">
+                <div class="flex gap-1">
+                    <button @click="setTab('bookings')"
+                            :class="tab === 'bookings' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition">
+                        Заявки
+                    </button>
+                    <button @click="setTab('calendar')"
+                            :class="tab === 'calendar' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition">
+                        Календарь
+                    </button>
+                </div>
+            </div>
         </header>
 
         <main class="max-w-7xl mx-auto px-4 py-4">
 
-            <!-- Статистика-фильтры -->
-            <div class="grid grid-cols-4 gap-2 mb-4">
-                <button @click="setFilter('new')"
-                        :class="filter === 'new' ? 'ring-2 ring-blue-500 bg-blue-50' : 'bg-white hover:bg-gray-50'"
-                        class="rounded-xl p-3 shadow-sm transition text-left">
-                    <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Новые</div>
-                    <div class="text-xl sm:text-2xl font-bold text-blue-600" x-text="stats.new"></div>
-                </button>
-                <button @click="setFilter('confirmed')"
-                        :class="filter === 'confirmed' ? 'ring-2 ring-green-500 bg-green-50' : 'bg-white hover:bg-gray-50'"
-                        class="rounded-xl p-3 shadow-sm transition text-left">
-                    <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Подтв.</div>
-                    <div class="text-xl sm:text-2xl font-bold text-green-600" x-text="stats.confirmed"></div>
-                </button>
-                <button @click="setFilter('paid')"
-                        :class="filter === 'paid' ? 'ring-2 ring-emerald-500 bg-emerald-50' : 'bg-white hover:bg-gray-50'"
-                        class="rounded-xl p-3 shadow-sm transition text-left">
-                    <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Оплачено</div>
-                    <div class="text-xl sm:text-2xl font-bold text-emerald-600" x-text="stats.paid"></div>
-                </button>
-                <button @click="setFilter('cancelled')"
-                        :class="filter === 'cancelled' ? 'ring-2 ring-gray-400 bg-gray-100' : 'bg-white hover:bg-gray-50'"
-                        class="rounded-xl p-3 shadow-sm transition text-left">
-                    <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Отмена</div>
-                    <div class="text-xl sm:text-2xl font-bold text-gray-400" x-text="stats.cancelled"></div>
-                </button>
-            </div>
-
-            <!-- Подпись текущего фильтра -->
-            <div class="text-sm text-gray-500 mb-3 px-1">
-                Показано: <span class="font-medium text-gray-700" x-text="filterLabel(filter)"></span>
-                (<span x-text="bookings.length"></span>)
-            </div>
-
-            <!-- Пусто -->
-            <div x-show="bookings.length === 0" x-cloak class="bg-white rounded-xl p-8 text-center text-gray-500 shadow-sm">
-                В этой категории пока пусто
-            </div>
-
-            <!-- МОБАЙЛ: карточки -->
-            <div x-show="bookings.length > 0" x-cloak class="sm:hidden space-y-2">
-                <template x-for="b in bookings" :key="b.id">
-                    <button @click="openBooking(b)"
-                            class="block w-full bg-white rounded-xl shadow-sm hover:shadow-md transition text-left p-4">
-                        <div class="flex justify-between items-start gap-2 mb-2">
-                            <div class="min-w-0 flex-1">
-                                <div class="font-semibold text-gray-900 truncate" x-text="b.guest_name"></div>
-                                <div class="text-sm text-gray-500 truncate" x-text="b.room_name"></div>
-                            </div>
-                            <span class="px-2 py-1 rounded-md text-xs font-medium shrink-0"
-                                  :class="statusClass(b.status)" x-text="statusLabel(b.status)"></span>
-                        </div>
-                        <div class="flex justify-between items-center text-sm">
-                            <div class="text-gray-600">
-                                <span x-text="formatDateShort(b.check_in)"></span>
-                                <span class="text-gray-400 mx-1">→</span>
-                                <span x-text="formatDateShort(b.check_out)"></span>
-                                <span class="text-gray-400 ml-2" x-text="'(' + nightsCount(b) + ' н.)'"></span>
-                            </div>
-                            <div class="font-semibold text-gray-900" x-text="formatPrice(b.total_price)"></div>
-                        </div>
+            <!-- ВКЛАДКА ЗАЯВКИ -->
+            <div x-show="tab === 'bookings'">
+                <div class="grid grid-cols-4 gap-2 mb-4">
+                    <button @click="setFilter('new')"
+                            :class="filter === 'new' ? 'ring-2 ring-blue-500 bg-blue-50' : 'bg-white hover:bg-gray-50'"
+                            class="rounded-xl p-3 shadow-sm transition text-left">
+                        <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Новые</div>
+                        <div class="text-xl sm:text-2xl font-bold text-blue-600" x-text="stats.new"></div>
                     </button>
-                </template>
+                    <button @click="setFilter('confirmed')"
+                            :class="filter === 'confirmed' ? 'ring-2 ring-green-500 bg-green-50' : 'bg-white hover:bg-gray-50'"
+                            class="rounded-xl p-3 shadow-sm transition text-left">
+                        <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Подтв.</div>
+                        <div class="text-xl sm:text-2xl font-bold text-green-600" x-text="stats.confirmed"></div>
+                    </button>
+                    <button @click="setFilter('paid')"
+                            :class="filter === 'paid' ? 'ring-2 ring-emerald-500 bg-emerald-50' : 'bg-white hover:bg-gray-50'"
+                            class="rounded-xl p-3 shadow-sm transition text-left">
+                        <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Оплачено</div>
+                        <div class="text-xl sm:text-2xl font-bold text-emerald-600" x-text="stats.paid"></div>
+                    </button>
+                    <button @click="setFilter('cancelled')"
+                            :class="filter === 'cancelled' ? 'ring-2 ring-gray-400 bg-gray-100' : 'bg-white hover:bg-gray-50'"
+                            class="rounded-xl p-3 shadow-sm transition text-left">
+                        <div class="text-[10px] sm:text-xs text-gray-500 uppercase">Отмена</div>
+                        <div class="text-xl sm:text-2xl font-bold text-gray-400" x-text="stats.cancelled"></div>
+                    </button>
+                </div>
+
+                <div class="text-sm text-gray-500 mb-3 px-1">
+                    Показано: <span class="font-medium text-gray-700" x-text="filterLabel(filter)"></span>
+                    (<span x-text="bookings.length"></span>)
+                </div>
+
+                <div x-show="bookings.length === 0" x-cloak class="bg-white rounded-xl p-8 text-center text-gray-500 shadow-sm">
+                    В этой категории пока пусто
+                </div>
+
+                <!-- МОБАЙЛ: карточки -->
+                <div x-show="bookings.length > 0" x-cloak class="sm:hidden space-y-2">
+                    <template x-for="b in bookings" :key="b.id">
+                        <button @click="openBooking(b)" class="block w-full bg-white rounded-xl shadow-sm hover:shadow-md transition text-left p-4">
+                            <div class="flex justify-between items-start gap-2 mb-2">
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-semibold text-gray-900 truncate" x-text="b.guest_name"></div>
+                                    <div class="text-sm text-gray-500 truncate" x-text="b.room_name"></div>
+                                </div>
+                                <span class="px-2 py-1 rounded-md text-xs font-medium shrink-0"
+                                      :class="statusClass(b.status)" x-text="statusLabel(b.status)"></span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <div class="text-gray-600">
+                                    <span x-text="formatDateShort(b.check_in)"></span>
+                                    <span class="text-gray-400 mx-1">→</span>
+                                    <span x-text="formatDateShort(b.check_out)"></span>
+                                    <span class="text-gray-400 ml-2" x-text="'(' + nightsCount(b) + ' н.)'"></span>
+                                </div>
+                                <div class="font-semibold text-gray-900" x-text="formatPrice(b.total_price)"></div>
+                            </div>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- ДЕСКТОП: таблица -->
+                <div x-show="bookings.length > 0" x-cloak class="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr class="text-left text-xs text-gray-500 uppercase">
+                                <th class="px-4 py-3">Создана</th>
+                                <th class="px-4 py-3">Гость</th>
+                                <th class="px-4 py-3">Номер</th>
+                                <th class="px-4 py-3">Период</th>
+                                <th class="px-4 py-3">Сумма</th>
+                                <th class="px-4 py-3">Статус</th>
+                                <th class="px-4 py-3">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="b in bookings" :key="b.id">
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" @click="openBooking(b)">
+                                    <td class="px-4 py-3 text-sm text-gray-500" x-text="formatDate(b.created_at)"></td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-gray-900" x-text="b.guest_name"></div>
+                                        <a :href="'tel:' + b.guest_phone" @click.stop class="text-xs text-blue-600 hover:underline" x-text="b.guest_phone"></a>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm" x-text="b.room_name"></td>
+                                    <td class="px-4 py-3 text-sm text-gray-600">
+                                        <span x-text="formatDateShort(b.check_in)"></span> →
+                                        <span x-text="formatDateShort(b.check_out)"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm font-medium" x-text="formatPrice(b.total_price)"></td>
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-1 rounded-md text-xs font-medium" :class="statusClass(b.status)" x-text="statusLabel(b.status)"></span>
+                                    </td>
+                                    <td class="px-4 py-3" @click.stop>
+                                        <div class="flex gap-1 flex-wrap">
+                                            <button x-show="b.status === 'new'" @click="updateStatus(b.id, 'confirmed')"
+                                                    class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">Подтвердить</button>
+                                            <button x-show="b.status === 'confirmed'" @click="updateStatus(b.id, 'paid')"
+                                                    class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200">Оплачено</button>
+                                            <button x-show="b.status !== 'cancelled' && b.status !== 'completed'" @click="updateStatus(b.id, 'cancelled')"
+                                                    class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">Отменить</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- ДЕСКТОП: таблица -->
-            <div x-show="bookings.length > 0" x-cloak class="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden">
-                <table class="w-full">
-                    <thead class="bg-gray-50 border-b border-gray-200">
-                        <tr class="text-left text-xs text-gray-500 uppercase">
-                            <th class="px-4 py-3">Создана</th>
-                            <th class="px-4 py-3">Гость</th>
-                            <th class="px-4 py-3">Номер</th>
-                            <th class="px-4 py-3">Период</th>
-                            <th class="px-4 py-3">Сумма</th>
-                            <th class="px-4 py-3">Статус</th>
-                            <th class="px-4 py-3">Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="b in bookings" :key="b.id">
-                            <tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" @click="openBooking(b)">
-                                <td class="px-4 py-3 text-sm text-gray-500" x-text="formatDate(b.created_at)"></td>
-                                <td class="px-4 py-3">
-                                    <div class="font-medium text-gray-900" x-text="b.guest_name"></div>
-                                    <a :href="'tel:' + b.guest_phone" @click.stop
-                                       class="text-xs text-blue-600 hover:underline" x-text="b.guest_phone"></a>
-                                </td>
-                                <td class="px-4 py-3 text-sm" x-text="b.room_name"></td>
-                                <td class="px-4 py-3 text-sm text-gray-600">
-                                    <span x-text="formatDateShort(b.check_in)"></span> →
-                                    <span x-text="formatDateShort(b.check_out)"></span>
-                                </td>
-                                <td class="px-4 py-3 text-sm font-medium" x-text="formatPrice(b.total_price)"></td>
-                                <td class="px-4 py-3">
-                                    <span class="px-2 py-1 rounded-md text-xs font-medium"
-                                          :class="statusClass(b.status)" x-text="statusLabel(b.status)"></span>
-                                </td>
-                                <td class="px-4 py-3" @click.stop>
-                                    <div class="flex gap-1 flex-wrap">
-                                        <button x-show="b.status === 'new'" @click="updateStatus(b.id, 'confirmed')"
-                                                class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">Подтвердить</button>
-                                        <button x-show="b.status === 'confirmed'" @click="updateStatus(b.id, 'paid')"
-                                                class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded hover:bg-emerald-200">Оплачено</button>
-                                        <button x-show="b.status !== 'cancelled' && b.status !== 'completed'" @click="updateStatus(b.id, 'cancelled')"
-                                                class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">Отменить</button>
-                                    </div>
-                                </td>
-                            </tr>
+            <!-- ВКЛАДКА КАЛЕНДАРЬ -->
+            <div x-show="tab === 'calendar'" x-cloak>
+                <!-- Навигация -->
+                <div class="flex items-center justify-between mb-4 bg-white rounded-xl shadow-sm p-3">
+                    <div class="flex items-center gap-2">
+                        <button @click="prevMonth()" class="p-2 hover:bg-gray-100 rounded-lg">←</button>
+                        <button @click="goToday()" class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg">Сегодня</button>
+                        <button @click="nextMonth()" class="p-2 hover:bg-gray-100 rounded-lg">→</button>
+                    </div>
+                    <div class="font-semibold text-gray-900" x-text="currentMonthLabel"></div>
+                </div>
+
+                <!-- Шахматка -->
+                <div class="bg-white rounded-xl shadow-sm overflow-auto">
+                    <!-- Шапка: одна строка с днями -->
+                    <div class="cal-grid" :style="`--days: ${days.length}`">
+                        <div class="cal-room-header"></div>
+                        <template x-for="d in days" :key="'h-' + d.iso">
+                            <div class="cal-header" :class="{ 'weekend': d.isWeekend, 'today': d.isToday }">
+                                <div x-text="d.day"></div>
+                                <div class="text-gray-400 text-[10px]" x-text="d.weekday"></div>
+                            </div>
                         </template>
-                    </tbody>
-                </table>
+                    </div>
+
+                    <!-- Тело: по одной grid-строке на номер -->
+                    <template x-for="r in calRooms" :key="'r-' + r.id">
+                        <div class="cal-grid" :style="`--days: ${days.length}`">
+                            <div class="cal-room" x-text="r.name"></div>
+                            <template x-for="d in days" :key="'c-' + r.id + '-' + d.iso">
+                                <div class="cal-cell"
+                                     :class="{
+                                        'weekend': d.isWeekend,
+                                        'today': d.isToday,
+                                        'has-booking': hasBookingAt(r.id, d.iso)
+                                     }"
+                                     @click="onCellClick(r.id, d.iso)">
+                                    <template x-for="b in bookingsStartingAt(r.id, d.iso)" :key="'b-' + b.id">
+                                        <div class="booking-bar"
+                                             :class="'status-' + b.status"
+                                             :style="`left: 4px; width: calc(${barWidth(b)}% - 8px);`"
+                                             @click.stop="openBooking(b)"
+                                             x-text="b.guest_name"></div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="mt-3 text-xs text-gray-500 flex flex-wrap gap-3 items-center">
+                    <span><span class="inline-block w-3 h-3 bg-blue-500 rounded-sm mr-1 align-middle"></span>Новая</span>
+                    <span><span class="inline-block w-3 h-3 bg-green-600 rounded-sm mr-1 align-middle"></span>Подтверждена</span>
+                    <span><span class="inline-block w-3 h-3 bg-emerald-600 rounded-sm mr-1 align-middle"></span>Оплачена</span>
+                    <span class="text-gray-400">Клик по пустой ячейке — создать ручную бронь</span>
+                </div>
+            </div>
+                <div class="mt-3 text-xs text-gray-500 flex flex-wrap gap-3 items-center">
+                    <span><span class="inline-block w-3 h-3 bg-blue-500 rounded-sm mr-1 align-middle"></span>Новая</span>
+                    <span><span class="inline-block w-3 h-3 bg-green-600 rounded-sm mr-1 align-middle"></span>Подтверждена</span>
+                    <span><span class="inline-block w-3 h-3 bg-emerald-600 rounded-sm mr-1 align-middle"></span>Оплачена</span>
+                    <span class="text-gray-400">Клик по пустой ячейке — создать ручную бронь</span>
+                </div>
             </div>
         </main>
 
-        <!-- Модалка просмотра/действий -->
+        <!-- Модалка просмотра брони -->
         <div x-show="bookingModal" x-cloak @click.self="bookingModal = false"
              class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
             <div class="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
@@ -196,66 +342,36 @@
                     </div>
                     <button @click="bookingModal = false" class="text-gray-400 hover:text-gray-600 text-3xl leading-none shrink-0">×</button>
                 </div>
-
                 <div class="space-y-3 text-sm mb-5">
-                    <div class="flex justify-between gap-2">
-                        <span class="text-gray-500">Телефон</span>
-                        <a :href="'tel:' + current?.guest_phone" class="text-blue-600 font-medium" x-text="current?.guest_phone"></a>
-                    </div>
-                    <div class="flex justify-between gap-2">
-                        <span class="text-gray-500">Номер</span>
-                        <span class="font-medium text-right" x-text="current?.room_name"></span>
-                    </div>
-                    <div class="flex justify-between gap-2">
-                        <span class="text-gray-500">Заезд</span>
-                        <span class="font-medium" x-text="current ? formatDate(current.check_in) : ''"></span>
-                    </div>
-                    <div class="flex justify-between gap-2">
-                        <span class="text-gray-500">Выезд</span>
-                        <span class="font-medium" x-text="current ? formatDate(current.check_out) : ''"></span>
-                    </div>
-                    <div class="flex justify-between gap-2">
-                        <span class="text-gray-500">Ночей</span>
-                        <span class="font-medium" x-text="current ? nightsCount(current) : ''"></span>
-                    </div>
-                    <div class="flex justify-between gap-2">
-                        <span class="text-gray-500">Сумма</span>
-                        <span class="font-bold text-lg" x-text="current ? formatPrice(current.total_price) : ''"></span>
-                    </div>
-                    <div class="flex justify-between gap-2">
-                        <span class="text-gray-500">Статус</span>
-                        <span class="px-2 py-1 rounded-md text-xs font-medium"
-                              :class="current ? statusClass(current.status) : ''"
-                              x-text="current ? statusLabel(current.status) : ''"></span>
-                    </div>
-                    <div class="flex justify-between gap-2">
-                        <span class="text-gray-500">Создана</span>
-                        <span class="text-gray-700" x-text="current ? formatDate(current.created_at) : ''"></span>
-                    </div>
+                    <div class="flex justify-between gap-2"><span class="text-gray-500">Телефон</span>
+                        <a :href="'tel:' + current?.guest_phone" class="text-blue-600 font-medium" x-text="current?.guest_phone"></a></div>
+                    <div class="flex justify-between gap-2"><span class="text-gray-500">Номер</span>
+                        <span class="font-medium text-right" x-text="current?.room_name || roomNameById(current?.room_id)"></span></div>
+                    <div class="flex justify-between gap-2"><span class="text-gray-500">Заезд</span>
+                        <span class="font-medium" x-text="current ? formatDate(current.check_in) : ''"></span></div>
+                    <div class="flex justify-between gap-2"><span class="text-gray-500">Выезд</span>
+                        <span class="font-medium" x-text="current ? formatDate(current.check_out) : ''"></span></div>
+                    <div class="flex justify-between gap-2"><span class="text-gray-500">Ночей</span>
+                        <span class="font-medium" x-text="current ? nightsCount(current) : ''"></span></div>
+                    <div class="flex justify-between gap-2"><span class="text-gray-500">Сумма</span>
+                        <span class="font-bold text-lg" x-text="current ? formatPrice(current.total_price) : ''"></span></div>
+                    <div class="flex justify-between gap-2"><span class="text-gray-500">Статус</span>
+                        <span class="px-2 py-1 rounded-md text-xs font-medium" :class="current ? statusClass(current.status) : ''" x-text="current ? statusLabel(current.status) : ''"></span></div>
                     <div x-show="current?.notes" class="pt-2 border-t border-gray-100">
                         <div class="text-gray-500 text-xs mb-1">Комментарий</div>
                         <div class="text-gray-700" x-text="current?.notes"></div>
                     </div>
                 </div>
-
                 <div class="space-y-2">
                     <a x-show="current" :href="'tel:' + current?.guest_phone"
-                       class="block w-full bg-gray-100 text-gray-900 text-center py-2.5 rounded-lg font-medium hover:bg-gray-200">
-                        📞 Позвонить
-                    </a>
+                       class="block w-full bg-gray-100 text-gray-900 text-center py-2.5 rounded-lg font-medium hover:bg-gray-200">📞 Позвонить</a>
                     <button x-show="current?.status === 'new'" @click="updateStatus(current.id, 'confirmed')"
-                            class="w-full bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700">
-                        ✓ Подтвердить
-                    </button>
+                            class="w-full bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700">✓ Подтвердить</button>
                     <button x-show="current?.status === 'confirmed'" @click="updateStatus(current.id, 'paid')"
-                            class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700">
-                        💵 Отметить оплату
-                    </button>
+                            class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700">💵 Отметить оплату</button>
                     <button x-show="current && current.status !== 'cancelled' && current.status !== 'completed'"
                             @click="updateStatus(current.id, 'cancelled')"
-                            class="w-full bg-white border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50">
-                        Отменить бронь
-                    </button>
+                            class="w-full bg-white border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50">Отменить бронь</button>
                 </div>
             </div>
         </div>
@@ -301,9 +417,7 @@
                         <textarea x-model="manual.notes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
                     </div>
                     <div x-show="manualError" x-cloak class="text-red-600 text-sm" x-text="manualError"></div>
-                    <button type="submit" class="w-full bg-blue-900 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-800">
-                        Создать бронь
-                    </button>
+                    <button type="submit" class="w-full bg-blue-900 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-800">Создать бронь</button>
                 </form>
             </div>
         </div>
@@ -321,6 +435,7 @@
                 loginForm: { email: '', password: '' },
                 loginError: '',
                 loggingIn: false,
+                tab: 'bookings',
                 bookings: [],
                 allBookings: [],
                 rooms: [],
@@ -334,63 +449,56 @@
                 pollTimer: null,
                 onVisibilityChange: null,
 
+                // Календарь
+                calMonth: null,         // первая дата отображаемого месяца (Date)
+                calRooms: [],
+                calBookings: [],
+                days: [],
+                currentMonthLabel: '',
+
                 async init() {
                     this.token = localStorage.getItem('vbron_token');
                     if (this.token) await this.loadMe();
                     this.loading = false;
+                    // Установим текущий месяц
+                    const now = new Date();
+                    this.calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 },
 
                 async loadMe() {
                     try {
                         const res = await fetch(`${API}/api/admin/me`, { headers: this.authHeaders() });
-                        if (!res.ok) {
-                            this.token = null;
-                            localStorage.removeItem('vbron_token');
-                            return;
-                        }
+                        if (!res.ok) { this.token = null; localStorage.removeItem('vbron_token'); return; }
                         const data = await res.json();
-                        this.user = data.user;
-                        this.tenant = data.tenant;
+                        this.user = data.user; this.tenant = data.tenant;
                         await this.loadAll();
                         this.startPolling();
                     } catch (e) { console.error(e); }
                 },
 
                 async login() {
-                    this.loginError = '';
-                    this.loggingIn = true;
+                    this.loginError = ''; this.loggingIn = true;
                     try {
                         const res = await fetch(`${API}/api/admin/login`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(this.loginForm)
                         });
                         const data = await res.json();
-                        if (!res.ok) {
-                            this.loginError = data.error === 'invalid_credentials' ? 'Неверный email или пароль' : 'Ошибка входа';
-                            return;
-                        }
+                        if (!res.ok) { this.loginError = data.error === 'invalid_credentials' ? 'Неверный email или пароль' : 'Ошибка входа'; return; }
                         this.token = data.token;
                         localStorage.setItem('vbron_token', this.token);
                         await this.loadMe();
-                    } catch (e) {
-                        this.loginError = 'Ошибка сети';
-                    } finally {
-                        this.loggingIn = false;
-                    }
+                    } catch (e) { this.loginError = 'Ошибка сети'; }
+                    finally { this.loggingIn = false; }
                 },
 
                 logout() {
                     this.stopPolling();
                     localStorage.removeItem('vbron_token');
-                    this.token = null;
-                    this.user = null;
-                    this.tenant = null;
+                    this.token = null; this.user = null; this.tenant = null;
                 },
 
-                authHeaders() {
-                    return { 'Authorization': 'Bearer ' + this.token, 'Content-Type': 'application/json' };
-                },
+                authHeaders() { return { 'Authorization': 'Bearer ' + this.token, 'Content-Type': 'application/json' }; },
 
                 async loadAll() {
                     await Promise.all([this.loadBookings(), this.loadRooms()]);
@@ -424,36 +532,123 @@
                     }
                 },
 
-                applyFilter() {
-                    this.bookings = this.allBookings.filter(b => b.status === this.filter);
+                applyFilter() { this.bookings = this.allBookings.filter(b => b.status === this.filter); },
+                setFilter(f) { this.filter = f; this.applyFilter(); },
+                filterLabel(f) { return { new: 'Новые', confirmed: 'Подтверждённые', paid: 'Оплаченные', cancelled: 'Отменённые' }[f] || f; },
+
+                setTab(t) {
+                    this.tab = t;
+                    if (t === 'calendar') this.loadCalendar();
                 },
 
-                setFilter(f) {
-                    this.filter = f;
-                    this.applyFilter();
+                async loadCalendar() {
+                    if (!this.calMonth) {
+                        const now = new Date();
+                        this.calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                    }
+                    const year = this.calMonth.getFullYear();
+                    const month = this.calMonth.getMonth();
+                    const from = `${year}-${String(month + 1).padStart(2,'0')}-01`;
+                    const lastDay = new Date(year, month + 1, 0).getDate();
+                    const to = `${year}-${String(month + 1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+
+                    this.currentMonthLabel = this.calMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+
+                    // Генерируем массив дней месяца
+                    const today = this.todayIso();
+                    const weekdays = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+                    this.days = [];
+                    for (let d = 1; d <= lastDay; d++) {
+                        const dt = new Date(year, month, d);
+                        const iso = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                        const dow = dt.getDay();
+                        this.days.push({
+                            iso,
+                            day: d,
+                            weekday: weekdays[dow],
+                            isWeekend: dow === 0 || dow === 6,
+                            isToday: iso === today
+                        });
+                    }
+
+                    try {
+                        const res = await fetch(`${API}/api/admin/bookings/calendar/data?from=${from}&to=${to}`, { headers: this.authHeaders() });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        this.calRooms = data.rooms || [];
+                        this.calBookings = data.bookings || [];
+                    } catch (e) { console.error(e); }
                 },
 
-                filterLabel(f) {
-                    return { new: 'Новые', confirmed: 'Подтверждённые', paid: 'Оплаченные', cancelled: 'Отменённые' }[f] || f;
+                prevMonth() {
+                    this.calMonth = new Date(this.calMonth.getFullYear(), this.calMonth.getMonth() - 1, 1);
+                    this.loadCalendar();
+                },
+                nextMonth() {
+                    this.calMonth = new Date(this.calMonth.getFullYear(), this.calMonth.getMonth() + 1, 1);
+                    this.loadCalendar();
+                },
+                goToday() {
+                    const now = new Date();
+                    this.calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                    this.loadCalendar();
                 },
 
-                openBooking(b) {
-                    this.current = b;
-                    this.bookingModal = true;
+                todayIso() {
+                    const d = new Date();
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                 },
+
+                // Возвращает брони, начинающиеся в этой ячейке (для отрисовки полоски)
+                bookingsStartingAt(roomId, iso) {
+                    return this.calBookings.filter(b => b.room_id === roomId && b.check_in.slice(0,10) === iso);
+                },
+
+                // Есть ли вообще активная бронь в этой ячейке (даже если не начинается тут)
+                hasBookingAt(roomId, iso) {
+                    return this.calBookings.some(b => b.room_id === roomId
+                        && b.check_in.slice(0,10) <= iso && b.check_out.slice(0,10) > iso);
+                },
+
+                // Ширина полоски брони в процентах от ячейки (количество ночей × 100)
+                barWidth(b) {
+                    const ci = new Date(b.check_in.slice(0,10));
+                    const co = new Date(b.check_out.slice(0,10));
+                    const nights = Math.max(1, Math.round((co - ci) / 86400000));
+                    return nights * 100;
+                },
+
+                onCellClick(roomId, iso) {
+                    // Если в этой ячейке бронь есть — ничего не делаем (откроется через bar)
+                    if (this.hasBookingAt(roomId, iso)) return;
+                    // Открываем модалку ручной брони с предзаполнением
+                    const tomorrow = new Date(iso);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const tomorrowIso = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+                    this.manual = {
+                        room_id: roomId,
+                        guest_name: '',
+                        guest_phone: '',
+                        check_in: iso,
+                        check_out: tomorrowIso,
+                        notes: ''
+                    };
+                    this.manualError = '';
+                    this.manualModal = true;
+                },
+
+                openBooking(b) { this.current = b; this.bookingModal = true; },
 
                 async updateStatus(id, status) {
                     if (!confirm('Изменить статус брони на "' + this.statusLabel(status) + '"?')) return;
                     try {
                         const res = await fetch(`${API}/api/admin/bookings/${id}`, {
-                            method: 'PATCH',
-                            headers: this.authHeaders(),
-                            body: JSON.stringify({ status })
+                            method: 'PATCH', headers: this.authHeaders(), body: JSON.stringify({ status })
                         });
                         if (!res.ok) { alert('Не удалось обновить статус'); return; }
-                        this.bookingModal = false;
-                        this.current = null;
+                        this.bookingModal = false; this.current = null;
                         await this.loadBookings();
+                        if (this.tab === 'calendar') await this.loadCalendar();
                     } catch (e) { console.error(e); }
                 },
 
@@ -467,32 +662,33 @@
                     this.manualError = '';
                     try {
                         const res = await fetch(`${API}/api/admin/bookings/manual`, {
-                            method: 'POST',
-                            headers: this.authHeaders(),
-                            body: JSON.stringify(this.manual)
+                            method: 'POST', headers: this.authHeaders(), body: JSON.stringify(this.manual)
                         });
                         const data = await res.json();
                         if (!res.ok) {
-                            const map = {
-                                dates_unavailable: 'На эти даты номер занят',
-                                invalid_dates: 'Проверьте даты',
-                                room_not_found: 'Номер не найден'
-                            };
+                            const map = { dates_unavailable: 'На эти даты номер занят', invalid_dates: 'Проверьте даты', room_not_found: 'Номер не найден' };
                             this.manualError = map[data.error] || 'Ошибка создания брони';
                             return;
                         }
                         this.manualModal = false;
                         await this.loadBookings();
+                        if (this.tab === 'calendar') await this.loadCalendar();
                     } catch (e) { this.manualError = 'Ошибка сети'; }
                 },
 
                 startPolling() {
                     if (this.pollTimer) return;
                     this.pollTimer = setInterval(() => {
-                        if (document.visibilityState === 'visible') this.loadBookings();
+                        if (document.visibilityState === 'visible') {
+                            this.loadBookings();
+                            if (this.tab === 'calendar') this.loadCalendar();
+                        }
                     }, 15000);
                     this.onVisibilityChange = () => {
-                        if (document.visibilityState === 'visible') this.loadBookings();
+                        if (document.visibilityState === 'visible') {
+                            this.loadBookings();
+                            if (this.tab === 'calendar') this.loadCalendar();
+                        }
                     };
                     document.addEventListener('visibilitychange', this.onVisibilityChange);
                 },
@@ -505,21 +701,12 @@
                     }
                 },
 
-                nightsCount(b) {
-                    return Math.ceil((new Date(b.check_out) - new Date(b.check_in)) / 86400000);
-                },
-                formatPrice(p) {
-                    return new Intl.NumberFormat('ru-RU').format(Math.round(p)) + ' ₸';
-                },
-                formatDate(d) {
-                    return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                },
-                formatDateShort(d) {
-                    return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-                },
-                statusLabel(s) {
-                    return { new: 'Новая', confirmed: 'Подтверждена', paid: 'Оплачено', cancelled: 'Отменена', completed: 'Завершена', no_show: 'Не пришёл' }[s] || s;
-                },
+                roomNameById(id) { return this.rooms.find(r => r.id === id)?.name || ''; },
+                nightsCount(b) { return Math.ceil((new Date(b.check_out) - new Date(b.check_in)) / 86400000); },
+                formatPrice(p) { return new Intl.NumberFormat('ru-RU').format(Math.round(p)) + ' ₸'; },
+                formatDate(d) { return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }); },
+                formatDateShort(d) { return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }); },
+                statusLabel(s) { return { new: 'Новая', confirmed: 'Подтверждена', paid: 'Оплачено', cancelled: 'Отменена', completed: 'Завершена', no_show: 'Не пришёл' }[s] || s; },
                 statusClass(s) {
                     return {
                         new: 'bg-blue-100 text-blue-800',
