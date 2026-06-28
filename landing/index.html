@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vbron.kz — Система онлайн-бронирования для зон отдыха</title>
+    <meta name="description" content="Сайт, календарь броней, Telegram-уведомления и AI-помощник для зон отдыха, саун и гостевых домов. Подключение за 7 дней.">
+    <meta property="og:title" content="vbron.kz — Система онлайн-бронирования для зон отдыха">
+    <meta property="og:description" content="Сайт, календарь броней, Telegram-уведомления и AI-помощник для зон отдыха.">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🗝️%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+        .hero-gradient {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f766e 100%);
+        }
+        .card-hover {
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        [x-cloak] { display: none !important; }
+
+        /* Простой grid с проблемами */
+        .problem-icon {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #92400e;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+
+<!-- Навигация -->
+<nav class="bg-white border-b border-gray-100 sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+        <a href="#" class="text-xl font-bold text-gray-900">vbron<span class="text-blue-600">.kz</span></a>
+        <div class="hidden md:flex items-center gap-6 text-sm">
+            <a href="#how" class="text-gray-600 hover:text-gray-900">Как работает</a>
+            <a href="#features" class="text-gray-600 hover:text-gray-900">Возможности</a>
+            <a href="#pricing" class="text-gray-600 hover:text-gray-900">Тарифы</a>
+            <a href="#faq" class="text-gray-600 hover:text-gray-900">FAQ</a>
+        </div>
+        <a href="https://wa.me/77072707299"
+           class="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600">
+           Связаться
+        </a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero-gradient text-white py-20 md:py-28">
+    <div class="max-w-5xl mx-auto px-6 text-center">
+        <div class="inline-block bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm mb-6">
+            🚀 Готовая платформа — запуск за 7 дней
+        </div>
+        <h1 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+            Цифровой отдел<br>бронирования<br>для вашей зоны отдыха
+        </h1>
+        <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Сайт с онлайн-бронированием, календарь занятости, уведомления в Telegram
+            и AI-помощник в WhatsApp — всё в одной системе.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <a href="https://demo.vbron.kz" target="_blank"
+               class="bg-white text-blue-900 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition w-full sm:w-auto">
+                👀 Посмотреть демо
+            </a>
+            <a href="https://wa.me/77072707299"
+               class="bg-green-500 text-white px-8 py-4 rounded-xl font-semibold hover:bg-green-600 transition w-full sm:w-auto">
+                💬 Написать в WhatsApp
+            </a>
+        </div>
+        <div class="mt-10 text-blue-200 text-sm">
+            Уже работает с зонами отдыха в Алматы и области
+        </div>
+    </div>
+</section>
+
+<!-- ПРОБЛЕМЫ -->
+<section class="py-20 bg-gray-50">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-14">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Знакомые проблемы?</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">Это то, что мы слышим от каждого владельца зоны отдыха</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl p-6 card-hover border border-gray-100">
+                <div class="w-12 h-12 rounded-xl problem-icon flex items-center justify-center text-2xl mb-4">📱</div>
+                <h3 class="font-bold text-lg mb-2">Сообщения в WhatsApp 24/7</h3>
+                <p class="text-gray-600 text-sm">Гости пишут в любое время одни и те же вопросы: цены, свободные даты, что входит. Менеджер не успевает отвечать.</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 card-hover border border-gray-100">
+                <div class="w-12 h-12 rounded-xl problem-icon flex items-center justify-center text-2xl mb-4">📋</div>
+                <h3 class="font-bold text-lg mb-2">Брони в тетради и Excel</h3>
+                <p class="text-gray-600 text-sm">Невозможно быстро посмотреть какие даты свободны. Случаются двойные брони, путаница, конфликты с гостями.</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 card-hover border border-gray-100">
+                <div class="w-12 h-12 rounded-xl problem-icon flex items-center justify-center text-2xl mb-4">❌</div>
+                <h3 class="font-bold text-lg mb-2">Потерянные заявки</h3>
+                <p class="text-gray-600 text-sm">Гость написал ночью — ответили утром. За это время он уже забронировал у конкурента. Так уходят деньги.</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 card-hover border border-gray-100">
+                <div class="w-12 h-12 rounded-xl problem-icon flex items-center justify-center text-2xl mb-4">📸</div>
+                <h3 class="font-bold text-lg mb-2">Слабый визуал</h3>
+                <p class="text-gray-600 text-sm">Фото на телефон в Instagram не продают. Гость не понимает что внутри номера, какой бассейн, какая мангальная зона.</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 card-hover border border-gray-100">
+                <div class="w-12 h-12 rounded-xl problem-icon flex items-center justify-center text-2xl mb-4">💸</div>
+                <h3 class="font-bold text-lg mb-2">Сложно с оплатой</h3>
+                <p class="text-gray-600 text-sm">Гости обещают приехать, но не приезжают. Без предоплаты — потерянный день. Просить предоплату вручную долго и неудобно.</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 card-hover border border-gray-100">
+                <div class="w-12 h-12 rounded-xl problem-icon flex items-center justify-center text-2xl mb-4">📊</div>
+                <h3 class="font-bold text-lg mb-2">Нет аналитики</h3>
+                <p class="text-gray-600 text-sm">Сколько заявок пришло за месяц? Какие номера популярнее? Сколько вы реально теряете на потерянных бронях? Никто не знает.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- КАК РАБОТАЕТ -->
+<section id="how" class="py-20 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-14">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Как это работает</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">Три простых шага — и вся ваша зона отдыха работает в одной системе</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-4">1</div>
+                <h3 class="font-bold text-xl mb-3">Гость заходит на сайт</h3>
+                <p class="text-gray-600">Видит фото, цены, описание номеров и календарь занятости. Выбирает даты и оставляет заявку прямо с телефона за 1 минуту.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-4">2</div>
+                <h3 class="font-bold text-xl mb-3">Уведомление в Telegram</h3>
+                <p class="text-gray-600">В момент брони вам приходит сообщение в Telegram — кто, когда, какой номер, на сколько и за какую сумму. Не пропустите ни одной заявки.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-4">3</div>
+                <h3 class="font-bold text-xl mb-3">Управление в одном окне</h3>
+                <p class="text-gray-600">Заходите в админ-панель с любого устройства — видите все заявки, календарь занятости, статистику и можете создать бронь вручную если гость позвонил.</p>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center">
+            <a href="https://demo.vbron.kz" target="_blank"
+               class="inline-flex items-center gap-2 bg-blue-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-800">
+                Открыть демо-сайт →
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ВОЗМОЖНОСТИ -->
+<section id="features" class="py-20 bg-gray-50">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-14">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Что вы получаете</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white rounded-xl p-5 border border-gray-100 flex gap-4">
+                <div class="text-2xl">🌐</div>
+                <div>
+                    <h4 class="font-semibold mb-1">Свой сайт на поддомене</h4>
+                    <p class="text-sm text-gray-600">Например, ваше-название.vbron.kz — адаптивный, с галереей и формой бронирования.</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-gray-100 flex gap-4">
+                <div class="text-2xl">📅</div>
+                <div>
+                    <h4 class="font-semibold mb-1">Календарь броней (шахматка)</h4>
+                    <p class="text-sm text-gray-600">Видите всю загрузку номеров на месяц вперёд на одном экране.</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-gray-100 flex gap-4">
+                <div class="text-2xl">🔔</div>
+                <div>
+                    <h4 class="font-semibold mb-1">Уведомления в Telegram</h4>
+                    <p class="text-sm text-gray-600">Бот пишет вам мгновенно при новой заявке. Никаких опозданий с ответом.</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-gray-100 flex gap-4">
+                <div class="text-2xl">🤖</div>
+                <div>
+                    <h4 class="font-semibold mb-1">AI-помощник в WhatsApp</h4>
+                    <p class="text-sm text-gray-600">Отвечает гостям на типовые вопросы 24/7: цены, свободные даты, что входит, как доехать.</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-gray-100 flex gap-4">
+                <div class="text-2xl">📸</div>
+                <div>
+                    <h4 class="font-semibold mb-1">Профессиональные фото</h4>
+                    <p class="text-sm text-gray-600">Выезд фотографа, обработка, размещение на сайте. Объект выглядит дороже.</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-gray-100 flex gap-4">
+                <div class="text-2xl">💵</div>
+                <div>
+                    <h4 class="font-semibold mb-1">Оплата через Kaspi</h4>
+                    <p class="text-sm text-gray-600">Гость получает ссылку на оплату, вы видите статус "оплачено" в админке. Меньше "не приехал".</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-gray-100 flex gap-4">
+                <div class="text-2xl">⭐</div>
+                <div>
+                    <h4 class="font-semibold mb-1">Сбор отзывов с AI-модерацией</h4>
+                    <p class="text-sm text-gray-600">Хорошие — на сайт автоматически. Плохие — вам в Telegram, чтобы успеть решить вопрос.</p>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-gray-100 flex gap-4">
+                <div class="text-2xl">📊</div>
+                <div>
+                    <h4 class="font-semibold mb-1">Аналитика и отчёты</h4>
+                    <p class="text-sm text-gray-600">Видите количество заявок, конверсию, загрузку номеров и выручку.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ТАРИФЫ -->
+<section id="pricing" class="py-20 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-14">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Тарифы</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">Выбирайте по своим задачам. Можно начать с базового и расширять.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- СТАРТ -->
+            <div class="bg-white rounded-2xl border border-gray-200 p-7 card-hover">
+                <div class="text-sm font-semibold text-blue-600 mb-1">СТАРТ</div>
+                <div class="text-3xl font-bold mb-1">150 000 ₸</div>
+                <div class="text-sm text-gray-500 mb-4">+ 20 000 ₸/мес поддержка</div>
+                <p class="text-gray-600 text-sm mb-6">Базовая страница для небольших объектов, у кого пока нет сайта.</p>
+                <ul class="space-y-2 mb-6 text-sm">
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Сайт на поддомене с галереей</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Описание номеров и цены</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Форма заявки</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Telegram-уведомления</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> WhatsApp-кнопка</li>
+                    <li class="flex gap-2 text-gray-400"><span>✕</span> Календарь броней</li>
+                    <li class="flex gap-2 text-gray-400"><span>✕</span> Админ-панель</li>
+                    <li class="flex gap-2 text-gray-400"><span>✕</span> AI-помощник</li>
+                </ul>
+                <a href="https://wa.me/77072707299?text=Здравствуйте,%20интересует%20пакет%20Старт"
+                   class="block w-full text-center bg-gray-900 text-white py-3 rounded-xl font-semibold hover:bg-gray-800">
+                    Обсудить
+                </a>
+            </div>
+
+            <!-- БРОНЬ — выделенный -->
+            <div class="bg-white rounded-2xl border-2 border-blue-600 p-7 card-hover relative shadow-lg">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                    ПОПУЛЯРНЫЙ
+                </div>
+                <div class="text-sm font-semibold text-blue-600 mb-1">БРОНЬ</div>
+                <div class="text-3xl font-bold mb-1">320 000 ₸</div>
+                <div class="text-sm text-gray-500 mb-4">+ 45 000 ₸/мес поддержка</div>
+                <p class="text-gray-600 text-sm mb-6">Полноценная система для объектов с несколькими номерами.</p>
+                <ul class="space-y-2 mb-6 text-sm">
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Всё из «Старт»</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Календарь занятости</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Админ-панель + шахматка</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Ручные брони</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Статусы и история</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> Сбор отзывов с AI-модерацией</li>
+                    <li class="flex gap-2"><span class="text-green-500">✓</span> База клиентов</li>
+                    <li class="flex gap-2 text-gray-400"><span>✕</span> AI в WhatsApp</li>
+                </ul>
+                <a href="https://wa.me/77072707299?text=Здравствуйте,%20интересует%20пакет%20Бронь"
+                   class="block w-full text-center bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700">
+                    Обсудить
+                </a>
+            </div>
+
+            <!-- ПРЕМИУМ -->
+            <div class="bg-gradient-to-br from-gray-900 to-blue-900 text-white rounded-2xl p-7 card-hover">
+                <div class="text-sm font-semibold text-blue-300 mb-1">ПРЕМИУМ</div>
+                <div class="text-3xl font-bold mb-1">от 800 000 ₸</div>
+                <div class="text-sm text-blue-200 mb-4">+ 80 000 ₸/мес поддержка</div>
+                <p class="text-blue-100 text-sm mb-6">Полная упаковка с фото и AI для дорогих объектов.</p>
+                <ul class="space-y-2 mb-6 text-sm">
+                    <li class="flex gap-2"><span class="text-green-400">✓</span> Всё из «Бронь»</li>
+                    <li class="flex gap-2"><span class="text-green-400">✓</span> AI-помощник в WhatsApp</li>
+                    <li class="flex gap-2"><span class="text-green-400">✓</span> Профессиональная фотосъёмка</li>
+                    <li class="flex gap-2"><span class="text-green-400">✓</span> Интеграция Kaspi</li>
+                    <li class="flex gap-2"><span class="text-green-400">✓</span> AI-маркетолог (акции на будни)</li>
+                    <li class="flex gap-2"><span class="text-green-400">✓</span> Оформление 2GIS и Instagram</li>
+                    <li class="flex gap-2"><span class="text-green-400">✓</span> Расширенная аналитика</li>
+                    <li class="flex gap-2"><span class="text-green-400">✓</span> Приоритетная поддержка</li>
+                </ul>
+                <a href="https://wa.me/77072707299?text=Здравствуйте,%20интересует%20пакет%20Премиум"
+                   class="block w-full text-center bg-white text-blue-900 py-3 rounded-xl font-semibold hover:bg-blue-50">
+                    Обсудить
+                </a>
+            </div>
+        </div>
+
+        <div class="mt-10 text-center text-sm text-gray-500">
+            Для первых клиентов — специальные условия. Поговорим по WhatsApp.
+        </div>
+    </div>
+</section>
+
+<!-- ДЕМО CTA -->
+<section class="py-20 bg-blue-900 text-white">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Лучше один раз увидеть</h2>
+        <p class="text-blue-100 text-lg mb-8">Зайдите на демо-сайт и попробуйте забронировать как обычный гость. Это займёт минуту.</p>
+        <a href="https://demo.vbron.kz" target="_blank"
+           class="inline-block bg-white text-blue-900 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-blue-50">
+            Открыть демо-сайт →
+        </a>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="py-20 bg-white" x-data="{ open: null }">
+    <div class="max-w-3xl mx-auto px-6">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Частые вопросы</h2>
+        </div>
+
+        <div class="space-y-3">
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button @click="open = open === 1 ? null : 1" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                    <span class="font-semibold">Сколько занимает запуск?</span>
+                    <span class="text-2xl text-gray-400" x-text="open === 1 ? '−' : '+'"></span>
+                </button>
+                <div x-show="open === 1" x-cloak class="px-5 pb-5 text-gray-600 text-sm">
+                    От 7 до 14 дней в зависимости от пакета. Сайт-визитка по «Старту» делается за неделю. Полноценная система с админкой и AI — 2 недели.
+                </div>
+            </div>
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button @click="open = open === 2 ? null : 2" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                    <span class="font-semibold">Что входит в абонентскую плату?</span>
+                    <span class="text-2xl text-gray-400" x-text="open === 2 ? '−' : '+'"></span>
+                </button>
+                <div x-show="open === 2" x-cloak class="px-5 pb-5 text-gray-600 text-sm">
+                    Хостинг, поддержка, обновления, мелкие правки в течение месяца, мониторинг работы. У дорогих пакетов — расширенная отчётность и приоритетный ответ.
+                </div>
+            </div>
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button @click="open = open === 3 ? null : 3" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                    <span class="font-semibold">Можно начать с базового пакета и потом расширить?</span>
+                    <span class="text-2xl text-gray-400" x-text="open === 3 ? '−' : '+'"></span>
+                </button>
+                <div x-show="open === 3" x-cloak class="px-5 pb-5 text-gray-600 text-sm">
+                    Да. Это нормальный сценарий — начать со «Старта» или «Брони», увидеть как работает, потом добавить AI или фото отдельно. Все данные сохраняются, никаких миграций.
+                </div>
+            </div>
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button @click="open = open === 4 ? null : 4" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                    <span class="font-semibold">Какой у меня будет домен?</span>
+                    <span class="text-2xl text-gray-400" x-text="open === 4 ? '−' : '+'"></span>
+                </button>
+                <div x-show="open === 4" x-cloak class="px-5 pb-5 text-gray-600 text-sm">
+                    По умолчанию — ваше-название.vbron.kz. Если у вас уже есть свой домен — можем подключить его, это вопрос настройки.
+                </div>
+            </div>
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button @click="open = open === 5 ? null : 5" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                    <span class="font-semibold">Если я захочу уйти — мои данные?</span>
+                    <span class="text-2xl text-gray-400" x-text="open === 5 ? '−' : '+'"></span>
+                </button>
+                <div x-show="open === 5" x-cloak class="px-5 pb-5 text-gray-600 text-sm">
+                    Вы получаете полный экспорт базы клиентов и истории броней в CSV. Никакого vendor lock-in. Контент сайта (тексты, фото) — тоже ваш, отдаём в любом формате.
+                </div>
+            </div>
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button @click="open = open === 6 ? null : 6" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                    <span class="font-semibold">Как происходит оплата?</span>
+                    <span class="text-2xl text-gray-400" x-text="open === 6 ? '−' : '+'"></span>
+                </button>
+                <div x-show="open === 6" x-cloak class="px-5 pb-5 text-gray-600 text-sm">
+                    50% при старте работ, 50% после запуска. Абонентская плата — ежемесячно, после запуска. Для первых клиентов — гибкие условия, обсудим лично.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ФИНАЛЬНЫЙ CTA -->
+<section class="py-20 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
+    <div class="max-w-3xl mx-auto px-6 text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Готовы начать?</h2>
+        <p class="text-blue-100 text-lg mb-8">Напишите в WhatsApp — расскажу подробнее, покажу демо и подберу подходящий пакет под ваш объект.</p>
+        <a href="https://wa.me/77072707299"
+           class="inline-block bg-green-500 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-green-600">
+            💬 Написать в WhatsApp
+        </a>
+        <div class="mt-6 text-blue-200 text-sm">
+            Или позвоните: <a href="tel:+77072707299" class="underline">+7 707 270 72 99</a>
+        </div>
+    </div>
+</section>
+
+<!-- ФУТЕР -->
+<footer class="bg-gray-900 text-gray-400 py-10">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="text-white text-lg font-bold">vbron<span class="text-blue-400">.kz</span></div>
+        <div class="text-sm">© 2026. Система онлайн-бронирования для зон отдыха</div>
+        <div class="flex gap-4 text-sm">
+            <a href="https://wa.me/77072707299" class="hover:text-white">WhatsApp</a>
+            <a href="tel:+77072707299" class="hover:text-white">Телефон</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

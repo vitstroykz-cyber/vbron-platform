@@ -80,17 +80,18 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <template x-for="room in rooms" :key="room.id">
                         <div class="room-card bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
-                            <!-- Заглушка вместо фото -->
-                            <div class="h-56 bg-gradient-to-br from-blue-100 to-teal-100 flex items-center justify-center">
-                                <span class="text-6xl">
-                                    <template x-if="room.type === 'cottage'">🏡</template>
-                                    <template x-if="room.type === 'sauna'">🧖</template>
-                                    <template x-if="room.type === 'gazebo'">⛱️</template>
-                                    <template x-if="!['cottage','sauna','gazebo'].includes(room.type)">🏠</template>
-                                </span>
-                            </div>
-                            <div class="p-6">
-                                <h3 class="text-xl font-bold text-gray-900 mb-2" x-text="room.name"></h3>
+                          <!-- Фото номера (первое из массива) -->
+                            <div class="h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden relative">
+                                <template x-if="room.photos && room.photos.length > 0">
+                                    <img :src="room.photos[0]" :alt="room.name" loading="lazy"
+                                         class="w-full h-full object-cover">
+                                </template>
+                                <template x-if="!room.photos || room.photos.length === 0">
+                                    <div class="w-full h-full flex items-center justify-center text-6xl">
+                                        <span x-text="room.type === 'cottage' ? '🏡' : room.type === 'sauna' ? '🧖' : '🏠'"></span>
+                                    </div>
+                                </template>
+                            </div>                                <h3 class="text-xl font-bold text-gray-900 mb-2" x-text="room.name"></h3>
                                 <p class="text-gray-600 text-sm mb-4" x-text="room.description"></p>
                                 <div class="flex justify-between items-center mb-4 text-sm text-gray-500">
                                     <span>👥 До <span x-text="room.capacity"></span> чел.</span>
