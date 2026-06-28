@@ -249,6 +249,7 @@
                         this.user = data.user;
                         this.tenant = data.tenant;
                         await this.loadAll();
+                        this.startPolling();
                     } catch (e) {
                         console.error(e);
                     }
@@ -279,6 +280,7 @@
                 },
 
                 logout() {
+                    this.stopPolling();
                     localStorage.removeItem('vbron_token');
                     this.token = null;
                     this.user = null;
@@ -290,9 +292,36 @@
                 },
 
                 async loadAll() {
+                    pollTimer: null,
                     await Promise.all([this.loadBookings(), this.loadRooms()]);
                 },
+                startPolling() {
+                    // Не плодим таймеры
+                    if (this.pollTimer) return;
+                    // Раз в 15 секунд тихо обновляем брони
+                    this.pollTimer = setInterval(() => {
+                        if (document.visibilityState === 'visible') {
+                            this.loadBookings();
+                        }
+                    }, 15000);
+                    // При возврате во вкладку — обновляем сразу
+                    document.addEventListener('visibilitychange', this.onVisibilityChange = () => {
+                        if (document.visibilityState === 'visible') {
+                            this.loadBookings();
+                        }
+                    });
+                },
 
+                stopPolling() {
+                    if (this.pollTimer) {
+                        clearInterval(this.pollTimer);
+                        this.pollTimer = null;
+                    }
+                    if (this.onVisibilityChange) {
+                        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+                        this.onVisibilityChange = null;
+                    }
+                },
                 async loadBookings() {
                     try {
                         const url = `${API}/api/admin/bookings${this.filterStatus ? '?status=' + this.filterStatus : ''}`;
