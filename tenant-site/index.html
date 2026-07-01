@@ -150,6 +150,11 @@
                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                     </div>
+                    <!-- Honeypot: невидимое поле, боты его заполняют -->
+                    <div style="position: absolute; left: -9999px; top: -9999px;" aria-hidden="true">
+                        <label>Не заполняйте это поле</label>
+                        <input type="text" x-model="booking.hp_field" tabindex="-1" autocomplete="off">
+                    </div>
                     <button type="submit"
                             class="w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition">
                         Отправить заявку
@@ -184,7 +189,7 @@
                 rooms: [],
                 bookingModal: false,
                 selectedRoom: null,
-                booking: { name: '', phone: '', checkIn: '', checkOut: '' },
+                booking: { name: '', phone: '', checkIn: '', checkOut: '', hp_field: '' },
 
                 async init() {
                     try {
@@ -241,7 +246,8 @@
                                 guest_name: this.booking.name,
                                 guest_phone: this.booking.phone,
                                 check_in: this.booking.checkIn,
-                                check_out: this.booking.checkOut
+                                check_out: this.booking.checkOut,
+                                hp_field: this.booking.hp_field
                             })
                         });
 
@@ -262,7 +268,7 @@
 
                         alert(`✅ Заявка отправлена!\n\nНомер: ${this.selectedRoom.name}\nСумма: ${this.formatPrice(data.booking.total_price)}\n\nМы свяжемся с вами в течение часа для подтверждения.`);
                         this.bookingModal = false;
-                        this.booking = { name: '', phone: '', checkIn: '', checkOut: '' };
+                        this.booking = { name: '', phone: '', checkIn: '', checkOut: '', hp_field: '' };
                     } catch (e) {
                         console.error(e);
                         alert('Ошибка сети. Проверьте подключение.');

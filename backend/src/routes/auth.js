@@ -2,12 +2,12 @@ import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../db/pool.js';
 import { signToken, requireAuth } from '../middleware/auth.js';
+import { loginLimiter } from '../middleware/rate-limit.js';
 
 const router = Router();
 
 // POST /api/admin/login
-router.post('/login', async (req, res) => {
-    try {
+router.post('/login', loginLimiter, async (req, res) => {    try {
         const { email, password } = req.body;
         if (!email || !password) {
             return res.status(400).json({ error: 'email_password_required' });

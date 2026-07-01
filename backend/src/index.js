@@ -9,6 +9,7 @@ import roomsRouter from './routes/rooms.js';
 import bookingsRouter from './routes/bookings.js';
 import authRouter from './routes/auth.js';
 import adminBookingsRouter from './routes/admin-bookings.js';
+import { globalLimiter } from './middleware/rate-limit.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -18,6 +19,8 @@ app.set('trust proxy', true);
 
 // Базовые middleware
 app.use(express.json({ limit: '1mb' }));
+// Общий rate limit — на все запросы
+app.use('/api/', globalLimiter);
 app.use(cors({
     origin: true,        // отражаем Origin запроса; ужесточим, когда будут конкретные домены
     credentials: true
