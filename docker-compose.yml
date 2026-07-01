@@ -64,6 +64,14 @@ services:
       - ./landing:/usr/share/nginx/html:ro
     networks:
       - proxy_default
+  vbron-coming-soon:
+    image: nginx:alpine
+    container_name: vbron_coming_soon
+    restart: unless-stopped
+    volumes:
+      - ./coming-soon:/usr/share/nginx/html:ro
+    networks:
+      - proxy_default
 networks:
   vbron_internal:
     name: vbron_internal
