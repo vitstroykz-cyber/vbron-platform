@@ -3,21 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vbron — Админ-панель</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📋%3C/text%3E%3C/svg%3E">
+    <title>vbron — Админ-панель</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
         [x-cloak] { display: none !important; }
-        .cal-grid { display: grid; grid-template-columns: 160px repeat(var(--days), minmax(36px, 1fr)); }
-        .cal-cell { border-right: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; min-height: 40px; position: relative; }
-        .cal-header { position: sticky; top: 0; background: white; z-index: 5; font-size: 11px; text-align: center; padding: 6px 2px; border-right: 1px solid #f3f4f6; border-bottom: 1px solid #e5e7eb; }
+        .cal-grid {
+            display: grid;
+            grid-template-columns: 160px repeat(var(--days), minmax(36px, 1fr));
+        }
+        .cal-cell {
+            border-right: 1px solid #f3f4f6;
+            border-bottom: 1px solid #f3f4f6;
+            min-height: 40px;
+            position: relative;
+        }
+        .cal-header {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 5;
+            font-size: 11px;
+            text-align: center;
+            padding: 6px 2px;
+            border-right: 1px solid #f3f4f6;
+            border-bottom: 1px solid #e5e7eb;
+        }
         .cal-header.weekend { background: #fef9c3; }
         .cal-header.today { background: #dbeafe; font-weight: 700; color: #1e40af; }
-        .cal-room { position: sticky; left: 0; background: white; z-index: 4; padding: 8px 12px; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #f3f4f6; font-size: 13px; font-weight: 500; }
-        .cal-room-header { position: sticky; left: 0; top: 0; background: #f9fafb; z-index: 6; border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
-        .booking-bar { position: absolute; top: 4px; bottom: 4px; background: #3b82f6; color: white; border-radius: 4px; padding: 2px 6px; font-size: 11px; line-height: 1.2; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; transition: filter 0.15s; }
+        .cal-room {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 4;
+            padding: 8px 12px;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .cal-room-header {
+            position: sticky;
+            left: 0;
+            top: 0;
+            background: #f9fafb;
+            z-index: 6;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .booking-bar {
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            line-height: 1.2;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            transition: filter 0.15s;
+        }
         .booking-bar:hover { filter: brightness(1.08); }
         .booking-bar.status-new { background: #3b82f6; }
         .booking-bar.status-confirmed { background: #16a34a; }
@@ -29,6 +82,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen" x-data="adminApp()" x-init="init()">
 
+    <!-- Загрузка -->
     <div x-show="loading" class="min-h-screen flex items-center justify-center">
         <div class="text-center">
             <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-300 border-t-blue-600 mb-3"></div>
@@ -36,6 +90,7 @@
         </div>
     </div>
 
+    <!-- Логин -->
     <div x-show="!loading && !user" x-cloak class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
             <div class="text-center mb-6">
@@ -63,7 +118,9 @@
         </div>
     </div>
 
+    <!-- Дашборд -->
     <div x-show="!loading && user" x-cloak>
+        <!-- Header -->
         <header class="bg-white border-b border-gray-200 sticky top-0 z-20">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div class="min-w-0 flex-1 pr-3">
@@ -78,19 +135,26 @@
                     <button @click="logout()" class="text-sm text-gray-500 hover:text-gray-700">Выход</button>
                 </div>
             </div>
+<!-- Вкладки -->
             <div class="max-w-7xl mx-auto px-4 border-t border-gray-100">
                 <div class="flex gap-1 overflow-x-auto">
                     <button @click="setTab('bookings')"
                             :class="tab === 'bookings' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">Заявки</button>
+                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">
+                        Заявки
+                    </button>
                     <button @click="setTab('calendar')"
                             :class="tab === 'calendar' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">Календарь</button>
+                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">
+                        Календарь
+                    </button>
                     <button @click="setTab('rooms')"
                             :class="tab === 'rooms' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">Номера</button>
+                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">
+                        Номера
+                    </button>
                 </div>
-            </div>
+            </div>       
         </header>
 
         <main class="max-w-7xl mx-auto px-4 py-4">
@@ -129,8 +193,11 @@
                     (<span x-text="bookings.length"></span>)
                 </div>
 
-                <div x-show="bookings.length === 0" x-cloak class="bg-white rounded-xl p-8 text-center text-gray-500 shadow-sm">В этой категории пока пусто</div>
+                <div x-show="bookings.length === 0" x-cloak class="bg-white rounded-xl p-8 text-center text-gray-500 shadow-sm">
+                    В этой категории пока пусто
+                </div>
 
+                <!-- МОБАЙЛ: карточки -->
                 <div x-show="bookings.length > 0" x-cloak class="sm:hidden space-y-2">
                     <template x-for="b in bookings" :key="b.id">
                         <button @click="openBooking(b)" class="block w-full bg-white rounded-xl shadow-sm hover:shadow-md transition text-left p-4">
@@ -139,7 +206,8 @@
                                     <div class="font-semibold text-gray-900 truncate" x-text="b.guest_name"></div>
                                     <div class="text-sm text-gray-500 truncate" x-text="b.room_name"></div>
                                 </div>
-                                <span class="px-2 py-1 rounded-md text-xs font-medium shrink-0" :class="statusClass(b.status)" x-text="statusLabel(b.status)"></span>
+                                <span class="px-2 py-1 rounded-md text-xs font-medium shrink-0"
+                                      :class="statusClass(b.status)" x-text="statusLabel(b.status)"></span>
                             </div>
                             <div class="flex justify-between items-center text-sm">
                                 <div class="text-gray-600">
@@ -154,6 +222,7 @@
                     </template>
                 </div>
 
+                <!-- ДЕСКТОП: таблица -->
                 <div x-show="bookings.length > 0" x-cloak class="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden">
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b border-gray-200">
@@ -203,6 +272,7 @@
 
             <!-- ВКЛАДКА КАЛЕНДАРЬ -->
             <div x-show="tab === 'calendar'" x-cloak>
+                <!-- Навигация -->
                 <div class="flex items-center justify-between mb-4 bg-white rounded-xl shadow-sm p-3">
                     <div class="flex items-center gap-2">
                         <button @click="prevMonth()" class="p-2 hover:bg-gray-100 rounded-lg">←</button>
@@ -212,7 +282,9 @@
                     <div class="font-semibold text-gray-900" x-text="currentMonthLabel"></div>
                 </div>
 
+                <!-- Шахматка -->
                 <div class="bg-white rounded-xl shadow-sm overflow-auto">
+                    <!-- Шапка: одна строка с днями -->
                     <div class="cal-grid" :style="`--days: ${days.length}`">
                         <div class="cal-room-header"></div>
                         <template x-for="d in days" :key="'h-' + d.iso">
@@ -223,17 +295,24 @@
                         </template>
                     </div>
 
+                    <!-- Тело: по одной grid-строке на номер -->
                     <template x-for="r in calRooms" :key="'r-' + r.id">
                         <div class="cal-grid" :style="`--days: ${days.length}`">
                             <div class="cal-room" x-text="r.name"></div>
                             <template x-for="d in days" :key="'c-' + r.id + '-' + d.iso">
                                 <div class="cal-cell"
-                                     :class="{ 'weekend': d.isWeekend, 'today': d.isToday, 'has-booking': hasBookingAt(r.id, d.iso) }"
+                                     :class="{
+                                        'weekend': d.isWeekend,
+                                        'today': d.isToday,
+                                        'has-booking': hasBookingAt(r.id, d.iso)
+                                     }"
                                      @click="onCellClick(r.id, d.iso)">
                                     <template x-for="b in bookingsStartingAt(r.id, d.iso)" :key="'b-' + b.id">
-                                        <div class="booking-bar" :class="'status-' + b.status"
+                                        <div class="booking-bar"
+                                             :class="'status-' + b.status"
                                              :style="`left: 4px; width: calc(${barWidth(b)}% - 8px);`"
-                                             @click.stop="openBooking(b)" x-text="b.guest_name"></div>
+                                             @click.stop="openBooking(b)"
+                                             x-text="b.guest_name"></div>
                                     </template>
                                 </div>
                             </template>
@@ -248,8 +327,14 @@
                     <span class="text-gray-400">Клик по пустой ячейке — создать ручную бронь</span>
                 </div>
             </div>
-
-            <!-- ВКЛАДКА НОМЕРА -->
+                <div class="mt-3 text-xs text-gray-500 flex flex-wrap gap-3 items-center">
+                    <span><span class="inline-block w-3 h-3 bg-blue-500 rounded-sm mr-1 align-middle"></span>Новая</span>
+                    <span><span class="inline-block w-3 h-3 bg-green-600 rounded-sm mr-1 align-middle"></span>Подтверждена</span>
+                    <span><span class="inline-block w-3 h-3 bg-emerald-600 rounded-sm mr-1 align-middle"></span>Оплачена</span>
+                    <span class="text-gray-400">Клик по пустой ячейке — создать ручную бронь</span>
+                </div>
+            </div>
+<!-- ВКЛАДКА НОМЕРА -->
             <div x-show="tab === 'rooms'" x-cloak>
                 <div class="flex justify-between items-center mb-4">
                     <div>
@@ -271,6 +356,7 @@
                         <div class="bg-white rounded-xl shadow-sm border overflow-hidden"
                              :class="!r.is_active ? 'opacity-60 border-gray-200' : 'border-transparent'">
                             <div class="flex gap-3 p-3">
+                                <!-- Превью фото -->
                                 <div class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 bg-gray-100 rounded-lg overflow-hidden">
                                     <template x-if="r.photos && r.photos.length > 0">
                                         <img :src="r.photos[0]" :alt="r.name" class="w-full h-full object-cover">
@@ -279,6 +365,8 @@
                                         <div class="w-full h-full flex items-center justify-center text-3xl">🏠</div>
                                     </template>
                                 </div>
+
+                                <!-- Основная инфа -->
                                 <div class="flex-1 min-w-0">
                                     <div class="flex justify-between items-start gap-2 mb-1">
                                         <div class="min-w-0">
@@ -290,13 +378,17 @@
                                     <div class="text-sm font-bold text-blue-900 mb-2" x-text="formatPrice(r.price_per_day) + ' / сутки'"></div>
                                     <div class="flex gap-2 flex-wrap">
                                         <button @click="openRoomModal(r)"
-                                                class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">Редактировать</button>
+                                                class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">
+                                            Редактировать
+                                        </button>
                                         <button @click="toggleRoomActive(r)"
                                                 class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">
                                             <span x-text="r.is_active ? 'Скрыть' : 'Показать'"></span>
                                         </button>
                                         <button @click="deleteRoom(r)"
-                                                class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">Удалить</button>
+                                                class="text-xs bg-red-50 text-red-700 px-2 py-1 rounded hover:bg-red-100">
+                                            Удалить
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -358,7 +450,99 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-bold text-gray-900">Ручная бронь</h3>
                     <button @click="manualModal = false" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">×</button>
+               <!-- Модалка редактирования номера -->
+        <div x-show="roomModal" x-cloak @click.self="roomModal = false"
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+            <div class="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-lg max-h-[95vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-900" x-text="roomForm.id ? 'Редактирование номера' : 'Новый номер'"></h3>
+                    <button @click="roomModal = false" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">×</button>
                 </div>
+                <form @submit.prevent="submitRoom()" class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
+                        <input type="text" x-model="roomForm.name" required maxlength="200"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                               placeholder="Например: Домик «Сосна»">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Тип</label>
+                            <select x-model="roomForm.type" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                <option value="room">Номер</option>
+                                <option value="cottage">Домик / коттедж</option>
+                                <option value="sauna">Сауна / баня</option>
+                                <option value="gazebo">Беседка</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Вместимость</label>
+                            <input type="number" x-model="roomForm.capacity" min="1" max="50" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Цена за сутки (₸)</label>
+                        <input type="number" x-model="roomForm.price_per_day" min="0" step="500" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Описание</label>
+                        <textarea x-model="roomForm.description" rows="4" maxlength="5000"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                  placeholder="Расскажите о номере: метраж, вид из окна, что входит..."></textarea>
+                        <div class="text-[10px] text-gray-400 mt-1">
+                            <span x-text="(roomForm.description || '').length"></span> / 5000
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Удобства (через запятую)</label>
+                        <input type="text" x-model="roomForm.amenitiesRaw"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                               placeholder="Wi-Fi, Камин, Терраса, Парковка">
+                        <div class="text-[10px] text-gray-400 mt-1">Показывается на карточке номера</div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Фото (URL, по одному на строку)</label>
+                        <textarea x-model="roomForm.photosRaw" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                                  placeholder="https://... "></textarea>
+                        <div class="text-[10px] text-gray-400 mt-1">Пока URL, скоро будет загрузка файлов</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Порядок</label>
+                            <input type="number" x-model="roomForm.display_order" min="0" max="999"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <div class="text-[10px] text-gray-400 mt-1">Меньше = выше в списке</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Статус</label>
+                            <select x-model="roomForm.is_active" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                <option :value="true">Показывать на сайте</option>
+                                <option :value="false">Скрыть с сайта</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div x-show="roomError" x-cloak class="text-red-600 text-sm" x-text="roomError"></div>
+
+                    <button type="submit" :disabled="roomSubmitting"
+                            class="w-full bg-blue-900 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-800 disabled:opacity-50">
+                        <span x-show="!roomSubmitting" x-text="roomForm.id ? 'Сохранить' : 'Создать'"></span>
+                        <span x-show="roomSubmitting">Сохранение...</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+                   </div>
                 <form @submit.prevent="submitManual()" class="space-y-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Номер</label>
@@ -396,91 +580,6 @@
                 </form>
             </div>
         </div>
-
-        <!-- Модалка редактирования номера -->
-        <div x-show="roomModal" x-cloak @click.self="roomModal = false"
-             class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
-            <div class="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-lg max-h-[95vh] overflow-y-auto">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-xl font-bold text-gray-900" x-text="roomForm.id ? 'Редактирование номера' : 'Новый номер'"></h3>
-                    <button @click="roomModal = false" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">×</button>
-                </div>
-                <form @submit.prevent="submitRoom()" class="space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
-                        <input type="text" x-model="roomForm.name" required maxlength="200"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                               placeholder="Например: Домик «Сосна»">
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Тип</label>
-                            <select x-model="roomForm.type" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                                <option value="room">Номер</option>
-                                <option value="cottage">Домик / коттедж</option>
-                                <option value="sauna">Сауна / баня</option>
-                                <option value="gazebo">Беседка</option>
-                                <option value="other">Другое</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Вместимость</label>
-                            <input type="number" x-model="roomForm.capacity" min="1" max="50" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Цена за сутки (₸)</label>
-                        <input type="number" x-model="roomForm.price_per_day" min="0" step="500" required
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Описание</label>
-                        <textarea x-model="roomForm.description" rows="4" maxlength="5000"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                                  placeholder="Расскажите о номере: метраж, вид из окна, что входит..."></textarea>
-                        <div class="text-[10px] text-gray-400 mt-1">
-                            <span x-text="(roomForm.description || '').length"></span> / 5000
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Удобства (через запятую)</label>
-                        <input type="text" x-model="roomForm.amenitiesRaw"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                               placeholder="Wi-Fi, Камин, Терраса, Парковка">
-                        <div class="text-[10px] text-gray-400 mt-1">Показывается на карточке номера</div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Фото (URL, по одному на строку)</label>
-                        <textarea x-model="roomForm.photosRaw" rows="3"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
-                                  placeholder="https://..."></textarea>
-                        <div class="text-[10px] text-gray-400 mt-1">Пока URL, скоро будет загрузка файлов</div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Порядок</label>
-                            <input type="number" x-model="roomForm.display_order" min="0" max="999"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                            <div class="text-[10px] text-gray-400 mt-1">Меньше = выше в списке</div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Статус</label>
-                            <select x-model="roomForm.is_active" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                                <option :value="true">Показывать на сайте</option>
-                                <option :value="false">Скрыть с сайта</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div x-show="roomError" x-cloak class="text-red-600 text-sm" x-text="roomError"></div>
-                    <button type="submit" :disabled="roomSubmitting"
-                            class="w-full bg-blue-900 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-800 disabled:opacity-50">
-                        <span x-show="!roomSubmitting" x-text="roomForm.id ? 'Сохранить' : 'Создать'"></span>
-                        <span x-show="roomSubmitting">Сохранение...</span>
-                    </button>
-                </form>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -506,24 +605,26 @@
                 manualModal: false,
                 manual: { room_id: '', guest_name: '', guest_phone: '', check_in: '', check_out: '', notes: '' },
                 manualError: '',
+// Управление номерами
+                roomModal: false,
+                roomForm: { id: null, name: '', type: 'room', capacity: 2, price_per_day: 0, description: '', photosRaw: '', amenitiesRaw: '', display_order: 0, is_active: true },
+                roomError: '',
+                roomSubmitting: false,
                 pollTimer: null,
                 onVisibilityChange: null,
 
-                calMonth: null,
+                // Календарь
+                calMonth: null,         // первая дата отображаемого месяца (Date)
                 calRooms: [],
                 calBookings: [],
                 days: [],
                 currentMonthLabel: '',
 
-                roomModal: false,
-                roomForm: { id: null, name: '', type: 'room', capacity: 2, price_per_day: 0, description: '', photosRaw: '', amenitiesRaw: '', display_order: 0, is_active: true },
-                roomError: '',
-                roomSubmitting: false,
-
                 async init() {
                     this.token = localStorage.getItem('vbron_token');
                     if (this.token) await this.loadMe();
                     this.loading = false;
+                    // Установим текущий месяц
                     const now = new Date();
                     this.calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 },
@@ -603,7 +704,6 @@
                     if (t === 'calendar') this.loadCalendar();
                     if (t === 'rooms') this.loadRooms();
                 },
-
                 async loadCalendar() {
                     if (!this.calMonth) {
                         const now = new Date();
@@ -617,6 +717,7 @@
 
                     this.currentMonthLabel = this.calMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
 
+                    // Генерируем массив дней месяца
                     const today = this.todayIso();
                     const weekdays = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
                     this.days = [];
@@ -625,7 +726,9 @@
                         const iso = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                         const dow = dt.getDay();
                         this.days.push({
-                            iso, day: d, weekday: weekdays[dow],
+                            iso,
+                            day: d,
+                            weekday: weekdays[dow],
                             isWeekend: dow === 0 || dow === 6,
                             isToday: iso === today
                         });
@@ -659,13 +762,18 @@
                     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                 },
 
+                // Возвращает брони, начинающиеся в этой ячейке (для отрисовки полоски)
                 bookingsStartingAt(roomId, iso) {
                     return this.calBookings.filter(b => b.room_id === roomId && b.check_in.slice(0,10) === iso);
                 },
+
+                // Есть ли вообще активная бронь в этой ячейке (даже если не начинается тут)
                 hasBookingAt(roomId, iso) {
                     return this.calBookings.some(b => b.room_id === roomId
                         && b.check_in.slice(0,10) <= iso && b.check_out.slice(0,10) > iso);
                 },
+
+                // Ширина полоски брони в процентах от ячейки (количество ночей × 100)
                 barWidth(b) {
                     const ci = new Date(b.check_in.slice(0,10));
                     const co = new Date(b.check_out.slice(0,10));
@@ -674,13 +782,19 @@
                 },
 
                 onCellClick(roomId, iso) {
+                    // Если в этой ячейке бронь есть — ничего не делаем (откроется через bar)
                     if (this.hasBookingAt(roomId, iso)) return;
+                    // Открываем модалку ручной брони с предзаполнением
                     const tomorrow = new Date(iso);
                     tomorrow.setDate(tomorrow.getDate() + 1);
                     const tomorrowIso = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
                     this.manual = {
-                        room_id: roomId, guest_name: '', guest_phone: '',
-                        check_in: iso, check_out: tomorrowIso, notes: ''
+                        room_id: roomId,
+                        guest_name: '',
+                        guest_phone: '',
+                        check_in: iso,
+                        check_out: tomorrowIso,
+                        notes: ''
                     };
                     this.manualError = '';
                     this.manualModal = true;
@@ -750,6 +864,12 @@
                     }
                 },
 
+                roomNameById(id) { return this.rooms.find(r => r.id === id)?.name || ''; },
+                nightsCount(b) { return Math.ceil((new Date(b.check_out) - new Date(b.check_in)) / 86400000); },
+                formatPrice(p) { return new Intl.NumberFormat('ru-RU').format(Math.round(p)) + ' ₸'; },
+                formatDate(d) { return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }); },
+                formatDateShort(d) { return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }); },
+                statusLabel(s) { return { new: 'Новая', confirmed: 'Подтверждена', paid: 'Оплачено', cancelled: 'Отменена', completed: 'Завершена', no_show: 'Не пришёл' }[s] || s; },
                 openRoomModal(room = null) {
                     if (room) {
                         this.roomForm = {
@@ -777,6 +897,7 @@
                     try {
                         const photos = (this.roomForm.photosRaw || '').split('\n').map(p => p.trim()).filter(p => p.length > 0);
                         const amenities = (this.roomForm.amenitiesRaw || '').split(',').map(a => a.trim()).filter(a => a.length > 0);
+
                         const body = {
                             name: this.roomForm.name,
                             type: this.roomForm.type,
@@ -788,12 +909,16 @@
                             display_order: parseInt(this.roomForm.display_order, 10) || 0,
                             is_active: this.roomForm.is_active === true || this.roomForm.is_active === 'true'
                         };
+
                         const url = this.roomForm.id
                             ? `${API}/api/admin/rooms/${this.roomForm.id}`
                             : `${API}/api/admin/rooms`;
                         const method = this.roomForm.id ? 'PATCH' : 'POST';
+
                         const res = await fetch(url, {
-                            method, headers: this.authHeaders(), body: JSON.stringify(body)
+                            method,
+                            headers: this.authHeaders(),
+                            body: JSON.stringify(body)
                         });
                         const data = await res.json();
                         if (!res.ok) {
@@ -814,7 +939,8 @@
                 async toggleRoomActive(room) {
                     try {
                         const res = await fetch(`${API}/api/admin/rooms/${room.id}`, {
-                            method: 'PATCH', headers: this.authHeaders(),
+                            method: 'PATCH',
+                            headers: this.authHeaders(),
                             body: JSON.stringify({ is_active: !room.is_active })
                         });
                         if (!res.ok) { alert('Не удалось изменить'); return; }
@@ -826,7 +952,8 @@
                     if (!confirm(`Удалить номер «${room.name}»? Он перестанет отображаться на сайте, но история броней сохранится.`)) return;
                     try {
                         const res = await fetch(`${API}/api/admin/rooms/${room.id}`, {
-                            method: 'DELETE', headers: this.authHeaders()
+                            method: 'DELETE',
+                            headers: this.authHeaders()
                         });
                         if (!res.ok) { alert('Не удалось удалить'); return; }
                         await this.loadRooms();
@@ -836,13 +963,6 @@
                 roomTypeLabel(t) {
                     return { room: 'Номер', cottage: 'Домик', sauna: 'Сауна', gazebo: 'Беседка', other: 'Другое' }[t] || t;
                 },
-
-                roomNameById(id) { return this.rooms.find(r => r.id === id)?.name || ''; },
-                nightsCount(b) { return Math.ceil((new Date(b.check_out) - new Date(b.check_in)) / 86400000); },
-                formatPrice(p) { return new Intl.NumberFormat('ru-RU').format(Math.round(p)) + ' ₸'; },
-                formatDate(d) { return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }); },
-                formatDateShort(d) { return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }); },
-                statusLabel(s) { return { new: 'Новая', confirmed: 'Подтверждена', paid: 'Оплачено', cancelled: 'Отменена', completed: 'Завершена', no_show: 'Не пришёл' }[s] || s; },
                 statusClass(s) {
                     return {
                         new: 'bg-blue-100 text-blue-800',

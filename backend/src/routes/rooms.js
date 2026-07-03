@@ -4,17 +4,44 @@ import { requireTenant } from '../middleware/tenant.js';
 
 const router = Router();
 
-// Список номеров текущего клиента
+// Список номеров с занятыми датами на 90 дней вперёд
 router.get('/', requireTenant, async (req, res) => {
     try {
-        const result = await query(
+        const roomsResult = await query(
             `SELECT id, name, type, capacity, price_per_day, description, photos, amenities, display_order
              FROM rooms
              WHERE tenant_id = $1 AND is_active = TRUE
              ORDER BY display_order, id`,
             [req.tenant.id]
         );
-        res.json({ rooms: result.rows, count: result.rowCount });
+
+        // Тянем занятые даты на 90 дней вперёд для всех номеров разом
+        const bookingsResult = await query(
+            `SELECT room_id, check_in, check_out FROM bookings
+             WHERE tenant_id = $1
+               AND status NOT IN ('cancelled', 'no_show')
+               AND check_out > CURRENT_DATE
+               AND check_in < CURRENT_DATE + INTERVAL '90 days'`,
+            [req.tenant.id]
+        );
+
+        // Группируем брони по room_id
+        const bookingsByRoom = {};
+        for (const b of bookingsResult.rows) {
+            if (!bookingsByRoom[b.room_id]) bookingsByRoom[b.room_id] = [];
+            bookingsByRoom[b.room_id].push({
+                check_in: b.check_in.toISOString().slice(0, 10),
+                check_out: b.check_out.toISOString().slice(0, 10)
+            });
+        }
+
+        // Добавляем брони к каждому номеру
+        const rooms = roomsResult.rows.map(r => ({
+            ...r,
+            bookings: bookingsByRoom[r.id] || []
+        }));
+
+        res.json({ rooms, count: rooms.length });
     } catch (err) {
         console.error('GET /rooms error:', err);
         res.status(500).json({ error: 'internal_error' });
@@ -22,7 +49,6 @@ router.get('/', requireTenant, async (req, res) => {
 });
 
 // Проверка доступности конкретного номера на даты
-// GET /api/rooms/:id/availability?check_in=2026-07-01&check_out=2026-07-05
 router.get('/:id/availability', requireTenant, async (req, res) => {
     try {
         const roomId = parseInt(req.params.id, 10);
@@ -32,7 +58,6 @@ router.get('/:id/availability', requireTenant, async (req, res) => {
             return res.status(400).json({ error: 'check_in and check_out required' });
         }
 
-        // Проверяем, что номер принадлежит этому tenant'у
         const roomCheck = await query(
             'SELECT id FROM rooms WHERE id = $1 AND tenant_id = $2 AND is_active = TRUE',
             [roomId, req.tenant.id]
@@ -41,7 +66,6 @@ router.get('/:id/availability', requireTenant, async (req, res) => {
             return res.status(404).json({ error: 'room_not_found' });
         }
 
-        // Ищем пересечения с существующими бронями (не cancelled)
         const overlapping = await query(
             `SELECT id FROM bookings
              WHERE room_id = $1

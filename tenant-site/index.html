@@ -3,16 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🏡%3C/text%3E%3C/svg%3E">
     <title>Загрузка...</title>
     <meta name="description" content="Зона отдыха — онлайн-бронирование">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🏡%3C/text%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
-        .hero-gradient {
-            background: linear-gradient(135deg, #1e3a8a 0%, #0f766e 100%);
+        .hero-image {
+            background-image: linear-gradient(135deg, rgba(15,23,42,0.75) 0%, rgba(20,58,80,0.65) 100%),
+                              url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920');
+            background-size: cover;
+            background-position: center;
         }
+        .btn-primary {
+            background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #164e63 0%, #0e7490 100%);
+        }
+        .accent-text { color: #0e7490; }
+        .accent-bg { background: #0e7490; }
         .room-card {
             transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -21,6 +32,34 @@
             box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
         }
         [x-cloak] { display: none !important; }
+        .demo-badge {
+            background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+        }
+        /* Мини-календарь */
+        .mini-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .mini-cal-day {
+            font-size: 10px;
+            text-align: center;
+            padding: 4px 0;
+            border-radius: 3px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mini-cal-day.empty { visibility: hidden; }
+        .mini-cal-day.past { color: #d1d5db; }
+        .mini-cal-day.free { background: #ecfeff; color: #0e7490; }
+        .mini-cal-day.busy { background: #fee2e2; color: #991b1b; text-decoration: line-through; }
+        .mini-cal-day.today { outline: 2px solid #0e7490; font-weight: 700; }
+        .mini-cal-header {
+            font-size: 9px;
+            text-align: center;
+            color: #6b7280;
+            font-weight: 500;
+            padding: 2px 0;
+        }
     </style>
 </head>
 <body class="bg-gray-50" x-data="siteData()" x-init="init()">
@@ -28,7 +67,7 @@
     <!-- Загрузка -->
     <div x-show="loading" class="min-h-screen flex items-center justify-center">
         <div class="text-center">
-            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600 mb-4"></div>
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-cyan-600 mb-4"></div>
             <p class="text-gray-600">Загрузка...</p>
         </div>
     </div>
@@ -45,65 +84,203 @@
     <!-- Основной контент -->
     <div x-show="!loading && !error" x-cloak>
 
+        <!-- Плашка "Демо" -->
+        <div class="demo-badge py-2 text-center text-xs sm:text-sm font-medium">
+            🎯 Это демонстрационный сайт vbron.kz — так может выглядеть ваша зона отдыха
+        </div>
+
         <!-- Hero -->
-        <header class="hero-gradient text-white">
+        <header class="hero-image text-white">
             <nav class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
                 <div class="font-bold text-xl" x-text="tenant?.name || ''"></div>
                 <a :href="'tel:' + (tenant?.owner_phone || '')"
-                   class="text-sm hover:text-blue-200 transition"
+                   class="text-sm hover:text-cyan-200 transition"
                    x-text="tenant?.owner_phone || ''"></a>
             </nav>
-            <div class="max-w-6xl mx-auto px-6 py-20 text-center">
+            <div class="max-w-6xl mx-auto px-6 py-24 md:py-32 text-center">
+                <div class="inline-block bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm mb-6">
+                    📍 <span x-text="tenant?.settings?.address || 'Капчагайское водохранилище'"></span>
+                </div>
                 <h1 class="text-4xl md:text-6xl font-bold mb-6" x-text="tenant?.name || ''"></h1>
-                <p class="text-xl mb-8 opacity-90">Уютный отдых, тёплый приём, лучшие воспоминания</p>
+                <p class="text-xl mb-8 opacity-95 max-w-2xl mx-auto">Уютные домики на первой линии, сауна с бассейном, мангальные зоны и своя береговая линия</p>
                 <a href="#rooms"
-                   class="inline-block bg-white text-blue-900 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition">
+                   class="inline-block btn-primary text-white px-8 py-3 rounded-lg font-semibold transition">
                     Выбрать номер
                 </a>
             </div>
         </header>
 
         <!-- О нас -->
-        <section class="max-w-6xl mx-auto px-6 py-16 text-center">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">О нас</h2>
-            <p class="text-gray-600 max-w-2xl mx-auto text-lg">
-                Мы создаём атмосферу настоящего отдыха для вас и вашей семьи.
-                Уютные домики, чистый воздух, природа вокруг — всё для того, чтобы вы могли расслабиться и набраться сил.
-            </p>
+        <section class="py-16 bg-white">
+            <div class="max-w-6xl mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-4">Место, куда возвращаются</h2>
+                        <p class="text-gray-600 mb-4 leading-relaxed">
+                            Мы открылись в 2019 году с идеи «сделать своё» — семейное место у воды, без гостиничного холода и общих коридоров. За 7 лет через нас прошли больше <b>3 000 семей</b>, и большая часть возвращается второй и третий раз.
+                        </p>
+                        <p class="text-gray-600 mb-6 leading-relaxed">
+                            Территория 1,2 га, своя береговая линия 80 метров, парковка на 15 машин, беседки с мангалами, детская площадка, лодочная станция. Летом — воду возят прямо к пирсу. Зимой — топим баню на дровах и жарим шашлык на снегу.
+                        </p>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="text-center border-l-4 border-cyan-600 pl-3">
+                                <div class="text-2xl font-bold text-gray-900">7</div>
+                                <div class="text-xs text-gray-500">лет работы</div>
+                            </div>
+                            <div class="text-center border-l-4 border-cyan-600 pl-3">
+                                <div class="text-2xl font-bold text-gray-900">3000+</div>
+                                <div class="text-xs text-gray-500">семей отдохнули</div>
+                            </div>
+                            <div class="text-center border-l-4 border-cyan-600 pl-3">
+                                <div class="text-2xl font-bold text-gray-900">4.8</div>
+                                <div class="text-xs text-gray-500">средний рейтинг</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl overflow-hidden shadow-lg h-80">
+                        <img src="https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=1200"
+                             alt="Территория" class="w-full h-full object-cover">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+<!-- Акции -->
+        <section class="py-16 bg-gradient-to-br from-cyan-50 to-blue-50">
+            <div class="max-w-6xl mx-auto px-6">
+                <div class="flex justify-center mb-4" x-show="tenant?.stats?.bookings_24h > 0">
+                    <div class="inline-flex items-center gap-2 bg-white/80 backdrop-blur border border-cyan-200 rounded-full px-4 py-2 text-sm text-gray-700 shadow-sm">
+                        <span class="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        За последние 24 часа забронировали
+                        <b x-text="tenant?.stats?.bookings_24h"></b>
+                        <span x-text="peopleLabel(tenant?.stats?.bookings_24h)"></span>
+                    </div>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2 text-center">Специальные предложения</h2>
+                <p class="text-gray-500 text-center mb-10">Экономия для тех, кто планирует заранее</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-2xl p-6 border border-cyan-100 shadow-sm">
+                        <div class="text-3xl mb-3">🌤</div>
+                        <div class="text-lg font-bold text-gray-900 mb-2">Будни −20%</div>
+                        <p class="text-sm text-gray-600 mb-3">Скидка 20% на все домики с понедельника по четверг. Тихо, свободно, никакого шума.</p>
+                        <div class="text-xs text-gray-400">При бронировании от 2 ночей</div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 border border-cyan-100 shadow-sm relative">
+                        <div class="absolute top-3 right-3 bg-cyan-600 text-white text-[10px] font-bold px-2 py-1 rounded-full">ХИТ</div>
+                        <div class="text-3xl mb-3">👨‍👩‍👧</div>
+                        <div class="text-lg font-bold text-gray-900 mb-2">3 ночи = 2</div>
+                        <p class="text-sm text-gray-600 mb-3">Бронируете 3 ночи подряд — платите как за 2. Работает для «Балауса» и «Алтын».</p>
+                        <div class="text-xs text-gray-400">Действует до 30 сентября</div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 border border-cyan-100 shadow-sm">
+                        <div class="text-3xl mb-3">🎂</div>
+                        <div class="text-lg font-bold text-gray-900 mb-2">День рождения</div>
+                        <p class="text-sm text-gray-600 mb-3">Отмечаете у нас — торт от заведения и час бани в подарок. Просто скажите при бронировании.</p>
+                        <div class="text-xs text-gray-400">Нужен документ</div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Номера -->
         <section id="rooms" class="bg-white py-16">
             <div class="max-w-6xl mx-auto px-6">
-                <h2 class="text-3xl font-bold text-gray-900 mb-12 text-center">Наши номера</h2>
-
+                <h2 class="text-3xl font-bold text-gray-900 mb-4 text-center">Наши номера</h2>
+                <p class="text-gray-500 text-center mb-12">Выберите даты и оставьте заявку — свяжемся в течение часа</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <template x-for="room in rooms" :key="room.id">
-                        <div class="room-card bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100">
-                          <!-- Фото номера (первое из массива) -->
-                            <div class="h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden relative">
+                        <div class="room-card bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 flex flex-col">
+                            <!-- Фото номера -->
+                            <div class="h-56 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden relative cursor-pointer"
+                                 @click="openGallery(room, 0)">
                                 <template x-if="room.photos && room.photos.length > 0">
                                     <img :src="room.photos[0]" :alt="room.name" loading="lazy"
                                          class="w-full h-full object-cover">
                                 </template>
                                 <template x-if="!room.photos || room.photos.length === 0">
-                                    <div class="w-full h-full flex items-center justify-center text-6xl">
-                                        <span x-text="room.type === 'cottage' ? '🏡' : room.type === 'sauna' ? '🧖' : '🏠'"></span>
+                                    <div class="w-full h-full flex items-center justify-center text-6xl">🏠</div>
+                                </template>
+                                <template x-if="room.photos && room.photos.length > 1">
+                                    <div class="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-md">
+                                        📸 <span x-text="room.photos.length"></span> фото
                                     </div>
                                 </template>
-                            </div>                                <h3 class="text-xl font-bold text-gray-900 mb-2" x-text="room.name"></h3>
-                                <p class="text-gray-600 text-sm mb-4" x-text="room.description"></p>
+                            </div>
+                            <div class="p-6 flex-1 flex flex-col relative">
+                                <template x-if="isTopChoice(room)">
+                                    <div class="absolute -top-4 right-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md uppercase tracking-wide">
+                                        ⭐ Топ-выбор
+                                    </div>
+                                </template>
+                                <div class="flex justify-between items-start mb-2 gap-2">
+                                    <h3 class="text-xl font-bold text-gray-900" x-text="room.name"></h3>
+                                    <div class="shrink-0 flex items-center gap-1 text-[11px] text-orange-600 bg-orange-50 px-2 py-1 rounded-md whitespace-nowrap"
+                                         x-show="watchingNow(room.id) > 0">
+                                        <span class="inline-block w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span>
+                                        <span x-text="watchingNow(room.id)"></span> смотрят
+                                    </div>
+                                </div>
+                                <!-- Удобства -->
+                                <div class="flex flex-wrap gap-2 mb-4"
+                                     x-show="room.amenities && room.amenities.length > 0">
+                                    <template x-for="am in (room.amenities || []).slice(0, 5)" :key="am">
+                                        <span class="text-xs bg-cyan-50 text-cyan-800 px-2 py-1 rounded-md" x-text="am"></span>
+                                    </template>
+                                </div>
+
+                                <!-- Мини-календарь занятости с листанием -->
+                                <div class="mb-4 border border-gray-100 rounded-lg p-3 bg-gray-50">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <button @click="prevMonth(room.id)"
+                                                :disabled="!canGoBack(room.id)"
+                                                class="text-cyan-700 hover:text-cyan-900 disabled:text-gray-300 disabled:cursor-not-allowed w-6 h-6 flex items-center justify-center rounded hover:bg-white">‹</button>
+                                        <div class="text-xs font-medium text-gray-700 text-center" x-text="monthLabel(room.id)"></div>
+                                        <button @click="nextMonth(room.id)"
+                                                :disabled="!canGoForward(room.id)"
+                                                class="text-cyan-700 hover:text-cyan-900 disabled:text-gray-300 disabled:cursor-not-allowed w-6 h-6 flex items-center justify-center rounded hover:bg-white">›</button>
+                                    </div>
+                                    <div class="mini-cal">
+                                        <template x-for="d in ['Пн','Вт','Ср','Чт','Пт','Сб','Вс']" :key="'h-'+d">
+                                            <div class="mini-cal-header" x-text="d"></div>
+                                        </template>
+                                        <template x-for="cell in buildMiniCal(room)" :key="cell.key">
+                                            <div :class="'mini-cal-day ' + cell.cls" x-text="cell.day"></div>
+                                        </template>
+                                    </div>
+                                    <!-- Свободных дней -->
+                                    <div class="text-[11px] text-cyan-800 mt-2 text-center bg-cyan-50 py-1 rounded border border-cyan-100">
+                                        Свободно в этом месяце:
+                                        <span class="font-bold" x-text="freeDaysThisMonth(room)"></span>
+                                        <span x-text="daysLabel(freeDaysThisMonth(room))"></span>
+                                    </div>
+                                    <!-- Легенда -->
+                                    <div class="flex flex-wrap gap-3 mt-3 pt-2 border-t border-gray-200 text-[10px] text-gray-600">
+                                        <div class="flex items-center gap-1">
+                                            <span class="inline-block w-3 h-3 rounded bg-cyan-50 border border-cyan-100"></span>
+                                            <span>Свободно</span>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <span class="inline-block w-3 h-3 rounded bg-red-100 border border-red-200"></span>
+                                            <span>Занято</span>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <span class="inline-block w-3 h-3 rounded outline outline-2 outline-cyan-600"></span>
+                                            <span>Сегодня</span>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="flex justify-between items-center mb-4 text-sm text-gray-500">
                                     <span>👥 До <span x-text="room.capacity"></span> чел.</span>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <div>
-                                        <span class="text-2xl font-bold text-blue-900"
+                                        <span class="text-2xl font-bold accent-text"
                                               x-text="formatPrice(room.price_per_day)"></span>
                                         <span class="text-gray-500 text-sm"> / сутки</span>
                                     </div>
                                     <button @click="selectRoom(room)"
-                                            class="bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition text-sm font-medium">
+                                            class="btn-primary text-white px-4 py-2 rounded-lg transition text-sm font-medium">
                                         Забронировать
                                     </button>
                                 </div>
@@ -114,12 +291,173 @@
             </div>
         </section>
 
+        <!-- Правила -->
+        <section class="py-16 bg-white">
+            <div class="max-w-4xl mx-auto px-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">Как всё устроено</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="flex gap-4">
+                        <div class="text-3xl shrink-0">⏰</div>
+                        <div>
+                            <div class="font-semibold mb-1">Заезд с 14:00, выезд до 12:00</div>
+                            <div class="text-sm text-gray-600">Раннее заселение и поздний выезд — по согласованию, если номер свободен.</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="text-3xl shrink-0">💳</div>
+                        <div>
+                            <div class="font-semibold mb-1">Предоплата 30% через Kaspi</div>
+                            <div class="text-sm text-gray-600">Подтверждаем бронь по факту предоплаты. Остаток при заезде — карта или наличные.</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="text-3xl shrink-0">🐕</div>
+                        <div>
+                            <div class="font-semibold mb-1">С небольшими собаками — можно</div>
+                            <div class="text-sm text-gray-600">До 15 кг, доплата 3 000 ₸ за уборку. Крупных и кошек, к сожалению, не размещаем.</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="text-3xl shrink-0">🎉</div>
+                        <div>
+                            <div class="font-semibold mb-1">Тихое время с 23:00 до 8:00</div>
+                            <div class="text-sm text-gray-600">Ради других гостей — без громкой музыки на территории по ночам. Внутри домиков — всё что хочется.</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="text-3xl shrink-0">🚗</div>
+                        <div>
+                            <div class="font-semibold mb-1">Своя парковка</div>
+                            <div class="text-sm text-gray-600">15 мест бесплатно, охраняемая. Для больших домиков — до 3 машин на объект.</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="text-3xl shrink-0">🚭</div>
+                        <div>
+                            <div class="font-semibold mb-1">Курение только на улице</div>
+                            <div class="text-sm text-gray-600">В домиках и сауне — нельзя. Пепельницы на террасах и в беседках.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Отзывы -->
+        <section class="max-w-6xl mx-auto px-6 py-16">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4 text-center">Что говорят гости</h2>
+            <p class="text-gray-500 text-center mb-12">Средняя оценка 4.8 из 5 · более 200 отзывов</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="flex text-yellow-400 text-lg mb-2">★★★★★</div>
+                    <p class="text-gray-700 mb-4 italic">«Приезжали с семьёй на два дня, взяли «Балауса». Домик прям у воды, вечером слышно как плещется. Всё чисто, полотенца, посуда, даже сахар в мисочке. Обязательно вернёмся.»</p>
+                    <div class="text-sm">
+                        <div class="font-medium text-gray-900">Айгуль К.</div>
+                        <div class="text-gray-500">Июнь 2026</div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="flex text-yellow-400 text-lg mb-2">★★★★★</div>
+                    <p class="text-gray-700 mb-4 italic">«Отмечали день рождения тестя, снимали большой домик «Алтын». Понравилась мангальная зона и то, что рядом парковка. Хозяева быстро отвечают, всё показали, помогли разжечь баню.»</p>
+                    <div class="text-sm">
+                        <div class="font-medium text-gray-900">Артур М.</div>
+                        <div class="text-gray-500">Май 2026</div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="flex text-yellow-400 text-lg mb-2">★★★★★</div>
+                    <p class="text-gray-700 mb-4 italic">«Сауна огонь. Прямо на пирсе, окунуться в бассейн после парной — то что нужно. Брали на 4 часа компанией из 6 человек, получилось экономично.»</p>
+                    <div class="text-sm">
+                        <div class="font-medium text-gray-900">Данияр Т.</div>
+                        <div class="text-gray-500">Апрель 2026</div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                    <div class="flex text-yellow-400 text-lg mb-2">★★★★<span class="text-gray-300">★</span></div>
+                    <p class="text-gray-700 mb-4 italic">«Всё отлично, но домик «Балауса» немного меньше чем ожидали по фото. Но локация и вид всё компенсируют. Дети от воды не отходили.»</p>
+                    <div class="text-sm">
+                        <div class="font-medium text-gray-900">Наталья В.</div>
+                        <div class="text-gray-500">Июнь 2026</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Как добраться -->
+        <section class="py-16 bg-gray-50">
+            <div class="max-w-4xl mx-auto px-6 text-center">
+                <h2 class="text-3xl font-bold text-gray-900 mb-4">Как добраться</h2>
+                <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+                    <span x-text="tenant?.settings?.address || ''"></span>. Дорога от Алматы — около часа. После бронирования вышлем точный маршрут в 2GIS.
+                </p>
+                <a :href="tenant?.settings?.map_2gis_url || 'https://2gis.kz'" target="_blank"
+                   class="inline-flex items-center gap-2 btn-primary text-white px-6 py-3 rounded-lg font-medium transition">
+                    🗺 Показать на карте 2GIS
+                </a>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="bg-white py-16" x-data="{ open: null }">
+            <div class="max-w-3xl mx-auto px-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-12 text-center">Частые вопросы</h2>
+
+                <div class="space-y-3">
+                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <button @click="open = open === 1 ? null : 1" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                            <span class="font-semibold">Что входит в стоимость?</span>
+                            <span class="text-2xl text-gray-400" x-text="open === 1 ? '−' : '+'"></span>
+                        </button>
+                        <div x-show="open === 1" x-cloak class="px-5 pb-5 text-gray-600">
+                            Проживание, постельное бельё, полотенца, посуда, Wi-Fi, парковка, доступ к пляжу и общей мангальной зоне. Баня и сауна оплачиваются отдельно по прайсу.
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <button @click="open = open === 2 ? null : 2" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                            <span class="font-semibold">Что взять с собой?</span>
+                            <span class="text-2xl text-gray-400" x-text="open === 2 ? '−' : '+'"></span>
+                        </button>
+                        <div x-show="open === 2" x-cloak class="px-5 pb-5 text-gray-600">
+                            Достаточно личных вещей. Постельное, полотенца, посуда, чайник, кофеварка — есть на месте. Продукты берите сами: ближайший магазин в 8 км, лучше закупиться заранее.
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <button @click="open = open === 3 ? null : 3" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                            <span class="font-semibold">Условия отмены брони?</span>
+                            <span class="text-2xl text-gray-400" x-text="open === 3 ? '−' : '+'"></span>
+                        </button>
+                        <div x-show="open === 3" x-cloak class="px-5 pb-5 text-gray-600">
+                            Бесплатная отмена не позднее чем за 7 дней до заезда — возвращаем 100% предоплаты. За 3-7 дней — возвращаем 50%. Позже — предоплата не возвращается.
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <button @click="open = open === 4 ? null : 4" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                            <span class="font-semibold">Есть ли Wi-Fi и связь?</span>
+                            <span class="text-2xl text-gray-400" x-text="open === 4 ? '−' : '+'"></span>
+                        </button>
+                        <div x-show="open === 4" x-cloak class="px-5 pb-5 text-gray-600">
+                            Wi-Fi во всех домиках, роутер отдельно в каждом. Связь: Beeline и Kcell — уверенно, Tele2 — местами. Скорость интернета — 30 Мбит.
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <button @click="open = open === 5 ? null : 5" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
+                            <span class="font-semibold">Работаете ли зимой?</span>
+                            <span class="text-2xl text-gray-400" x-text="open === 5 ? '−' : '+'"></span>
+                        </button>
+                        <div x-show="open === 5" x-cloak class="px-5 pb-5 text-gray-600">
+                            Да, круглогодично. Зимой отапливаем электроконвекторами и каминами. Баня на дровах особенно хороша именно зимой — очень многие приезжают ради неё.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Форма брони (модалка) -->
         <div x-show="bookingModal" x-cloak
-             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50"
              @click.self="bookingModal = false">
-            <div class="bg-white rounded-2xl p-8 max-w-md w-full">
-                <div class="flex justify-between items-start mb-6">
+            <div class="bg-white rounded-t-2xl sm:rounded-2xl p-6 max-w-md w-full max-h-[95vh] overflow-y-auto">
+                <div class="flex justify-between items-start mb-4">
                     <div>
                         <h3 class="text-2xl font-bold text-gray-900">Бронирование</h3>
                         <p class="text-gray-600 text-sm mt-1" x-text="selectedRoom?.name"></p>
@@ -127,55 +465,94 @@
                     <button @click="bookingModal = false" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
                 </div>
 
-                <form @submit.prevent="submitBooking()" class="space-y-4">
+                <form @submit.prevent="submitBooking()" class="space-y-3">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Ваше имя</label>
                         <input type="text" x-model="booking.name" required
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
                         <input type="tel" x-model="booking.phone" required placeholder="+7..."
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Заезд</label>
-                            <input type="date" x-model="booking.checkIn" required
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="date" x-model="booking.checkIn" required :min="todayIso"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Выезд</label>
-                            <input type="date" x-model="booking.checkOut" required
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="date" x-model="booking.checkOut" required :min="booking.checkIn || todayIso"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                         </div>
                     </div>
-                    <!-- Honeypot: невидимое поле, боты его заполняют -->
+
+                    <!-- Итоговая стоимость -->
+                    <div x-show="calcNights() > 0" x-cloak class="bg-cyan-50 border border-cyan-100 rounded-lg p-4 space-y-1 text-sm">
+                        <div class="flex justify-between text-gray-700">
+                            <span x-text="formatPrice(selectedRoom?.price_per_day) + ' × ' + calcNights() + ' ' + nightsLabel(calcNights())"></span>
+                            <span x-text="formatPrice(calcTotal())"></span>
+                        </div>
+                        <div class="border-t border-cyan-200 pt-2 mt-2 flex justify-between font-bold text-gray-900">
+                            <span>Итого</span>
+                            <span class="text-lg" x-text="formatPrice(calcTotal())"></span>
+                        </div>
+                        <div class="text-xs text-gray-500 pt-1">Предоплата 30% (<span x-text="formatPrice(calcTotal() * 0.3)"></span>) — при подтверждении</div>
+                    </div>
+
+                    <!-- Honeypot -->
                     <div style="position: absolute; left: -9999px; top: -9999px;" aria-hidden="true">
                         <label>Не заполняйте это поле</label>
                         <input type="text" x-model="booking.hp_field" tabindex="-1" autocomplete="off">
                     </div>
-                    <button type="submit"
-                            class="w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition">
-                        Отправить заявку
+
+                    <button type="submit" :disabled="submitting"
+                            class="w-full btn-primary text-white py-3 rounded-lg font-semibold transition disabled:opacity-50">
+                        <span x-show="!submitting">Отправить заявку</span>
+                        <span x-show="submitting">Отправка...</span>
                     </button>
                     <p class="text-xs text-gray-500 text-center">
-                        После отправки заявки мы свяжемся с вами для подтверждения брони
+                        После заявки мы свяжемся с вами в течение часа для подтверждения
                     </p>
                 </form>
             </div>
         </div>
 
+        <!-- Галерея фото -->
+        <div x-show="galleryOpen" x-cloak
+             class="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
+             @click.self="galleryOpen = false"
+             @keydown.escape.window="galleryOpen = false"
+             @keydown.arrow-left.window="prevPhoto()"
+             @keydown.arrow-right.window="nextPhoto()">
+            <button @click="galleryOpen = false" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 z-10">×</button>
+            <button x-show="galleryRoom?.photos?.length > 1" @click="prevPhoto()"
+                    class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-5xl hover:text-gray-300 z-10 select-none">‹</button>
+            <button x-show="galleryRoom?.photos?.length > 1" @click="nextPhoto()"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-5xl hover:text-gray-300 z-10 select-none">›</button>
+            <div class="max-w-5xl max-h-[90vh]">
+                <img x-show="galleryRoom" :src="galleryRoom?.photos?.[galleryIndex]" class="max-w-full max-h-[85vh] object-contain">
+                <div class="text-white text-center mt-3 text-sm">
+                    <span x-text="galleryRoom?.name"></span>
+                    <span x-show="galleryRoom?.photos?.length > 1" class="text-gray-400 ml-2">
+                        <span x-text="galleryIndex + 1"></span> / <span x-text="galleryRoom?.photos?.length"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
         <!-- Футер -->
-        <footer class="bg-gray-900 text-gray-400 py-12">
+        <footer class="bg-gray-900 text-gray-400 py-12 mt-16">
             <div class="max-w-6xl mx-auto px-6 text-center">
                 <div class="text-white text-xl font-bold mb-4" x-text="tenant?.name || ''"></div>
                 <p class="mb-2">Контактный телефон:
                     <a :href="'tel:' + (tenant?.owner_phone || '')"
-                       class="text-white hover:text-blue-300"
+                       class="text-white hover:text-cyan-300"
                        x-text="tenant?.owner_phone || ''"></a>
                 </p>
-                <p class="text-sm mt-6">© 2026. Сайт сделан на платформе vbron.kz</p>
+                <p class="text-sm mt-6">© 2026. Сайт сделан на платформе <a href="https://vbron.kz" class="hover:text-white underline">vbron.kz</a></p>
             </div>
         </footer>
     </div>
@@ -190,18 +567,19 @@
                 bookingModal: false,
                 selectedRoom: null,
                 booking: { name: '', phone: '', checkIn: '', checkOut: '', hp_field: '' },
+                submitting: false,
+                galleryOpen: false,
+                galleryRoom: null,
+                galleryIndex: 0,
+                todayIso: '',
 
                 async init() {
-                    try {
-                        // API_HOST настраивается через query или дефолт
-                        const API = 'https://api.vbron.kz';
-                        // Передаём свой Host явно через query-параметр, потому что
-                        // CORS-запрос от поддомена клиента не несёт правильный Host для бэка.
-                        const slug = window.location.hostname.split('.')[0];
+                    const t = new Date();
+                    this.todayIso = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
 
-                        // Бэкенд определяет tenant из Host автоматически.
-                        // Но мы ходим с demo.vbron.kz на api.vbron.kz — это другой Host.
-                        // Решение: тут передаём slug в URL, бэкенд научим читать его (день 7.1).
+                    try {
+                        const API = 'https://api.vbron.kz';
+                        const slug = window.location.hostname.split('.')[0];
 
                         const [tenantRes, roomsRes] = await Promise.all([
                             fetch(`${API}/api/tenant?slug=${slug}`),
@@ -222,7 +600,63 @@
                         this.loading = false;
                     }
                 },
+// Топ-выбор — комната с самой высокой ценой (в идеале — по реальной популярности, но пока так)
+                isTopChoice(room) {
+                    if (!this.rooms || this.rooms.length === 0) return false;
+                    const maxPrice = Math.max(...this.rooms.map(r => Number(r.price_per_day)));
+                    return Number(room.price_per_day) === maxPrice;
+                },
 
+                // "Смотрят сейчас" — псевдо-случайное число 2-9 в зависимости от id комнаты
+                // Стабильно в рамках сессии
+                watchingNow(roomId) {
+                    if (!this._watchingCache) this._watchingCache = {};
+                    if (this._watchingCache[roomId] === undefined) {
+                        // Хэш от id + текущий час, чтобы менялось каждый час
+                        const seed = roomId * 7 + new Date().getHours();
+                        this._watchingCache[roomId] = 2 + (seed % 8);
+                    }
+                    return this._watchingCache[roomId];
+                },
+
+                // Количество свободных дней в текущем видимом месяце
+                freeDaysThisMonth(room) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const offset = this.getOffset(room.id);
+                    const targetYear = today.getFullYear();
+                    const targetMonth = today.getMonth() + offset;
+                    const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+                    let free = 0;
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const date = new Date(targetYear, targetMonth, d);
+                        if (date < today) continue;
+                        const iso = this.dateToIso(date);
+                        const busy = (room.bookings || []).some(b => iso >= b.check_in && iso < b.check_out);
+                        if (!busy) free++;
+                    }
+                    return free;
+                },
+
+                daysLabel(n) {
+                    if (n % 10 === 1 && n % 100 !== 11) return 'день';
+                    if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'дня';
+                    return 'дней';
+                },
+
+                peopleLabel(n) {
+                    n = Number(n) || 0;
+                    if (n % 10 === 1 && n % 100 !== 11) return 'человек';
+                    if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'человека';
+                    return 'человек';
+                },
+
+                whatsappLink() {
+                    const phone = (this.tenant?.owner_phone || '').replace(/\D/g, '');
+                    const msg = `Здравствуйте! Интересует бронирование в ${this.tenant?.name || ''}`;
+                    return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+                },
                 formatPrice(price) {
                     return new Intl.NumberFormat('ru-RU').format(Math.round(price)) + ' ₸';
                 },
@@ -231,8 +665,123 @@
                     this.selectedRoom = room;
                     this.bookingModal = true;
                 },
+
+                openGallery(room, index) {
+                    if (!room.photos || room.photos.length === 0) return;
+                    this.galleryRoom = room;
+                    this.galleryIndex = index;
+                    this.galleryOpen = true;
+                },
+                nextPhoto() {
+                    if (!this.galleryRoom?.photos) return;
+                    this.galleryIndex = (this.galleryIndex + 1) % this.galleryRoom.photos.length;
+                },
+                prevPhoto() {
+                    if (!this.galleryRoom?.photos) return;
+                    this.galleryIndex = (this.galleryIndex - 1 + this.galleryRoom.photos.length) % this.galleryRoom.photos.length;
+                },
+
+                calcNights() {
+                    if (!this.booking.checkIn || !this.booking.checkOut) return 0;
+                    const ci = new Date(this.booking.checkIn);
+                    const co = new Date(this.booking.checkOut);
+                    if (isNaN(ci) || isNaN(co) || co <= ci) return 0;
+                    return Math.ceil((co - ci) / 86400000);
+                },
+                calcTotal() {
+                    return this.calcNights() * Number(this.selectedRoom?.price_per_day || 0);
+                },
+                nightsLabel(n) {
+                    if (n % 10 === 1 && n % 100 !== 11) return 'ночь';
+                    if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'ночи';
+                    return 'ночей';
+                },
+
+                // Строим мини-календарь на текущий месяц + прихват следующего
+                // Смещения месяцев для каждой комнаты (0 = текущий, 1 = следующий, 2 = через один)
+                calOffsets: {},
+
+                // Максимальное смещение (0, 1, 2 = три месяца)
+                MAX_OFFSET: 2,
+
+                getOffset(roomId) {
+                    return this.calOffsets[roomId] || 0;
+                },
+                canGoBack(roomId) {
+                    return this.getOffset(roomId) > 0;
+                },
+                canGoForward(roomId) {
+                    return this.getOffset(roomId) < this.MAX_OFFSET;
+                },
+                prevMonth(roomId) {
+                    if (!this.canGoBack(roomId)) return;
+                    this.calOffsets[roomId] = this.getOffset(roomId) - 1;
+                },
+                nextMonth(roomId) {
+                    if (!this.canGoForward(roomId)) return;
+                    this.calOffsets[roomId] = this.getOffset(roomId) + 1;
+                },
+
+                monthLabel(roomId) {
+                    const today = new Date();
+                    const offset = this.getOffset(roomId);
+                    const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+                    return d.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+                },
+
+                // Строим мини-календарь с учётом смещения месяца
+                buildMiniCal(room) {
+                    const cells = [];
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    const offset = this.getOffset(room.id);
+                    const targetYear = today.getFullYear();
+                    const targetMonth = today.getMonth() + offset;
+
+                    const firstDay = new Date(targetYear, targetMonth, 1);
+                    let dayOfWeek = firstDay.getDay();
+                    dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+                    for (let i = 0; i < dayOfWeek; i++) {
+                        cells.push({ key: 'e' + offset + '_' + i, day: '', cls: 'empty' });
+                    }
+
+                    const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const date = new Date(targetYear, targetMonth, d);
+                        const iso = this.dateToIso(date);
+                        cells.push({
+                            key: iso,
+                            day: d,
+                            cls: this.dayClass(date, today, iso, room)
+                        });
+                    }
+
+                    return cells;
+                },               
+
+                dayClass(date, today, iso, room) {
+                    const classes = [];
+                    if (date < today) return 'past';
+                    if (date.getTime() === today.getTime()) classes.push('today');
+
+                    // Проверяем занятость
+                    const isBusy = (room.bookings || []).some(b => {
+                        return iso >= b.check_in && iso < b.check_out;
+                    });
+
+                    classes.push(isBusy ? 'busy' : 'free');
+                    return classes.join(' ');
+                },
+
+                dateToIso(d) {
+                    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                },
+
                 async submitBooking() {
                     if (!this.selectedRoom) return;
+                    this.submitting = true;
 
                     const API = 'https://api.vbron.kz';
                     const slug = window.location.hostname.split('.')[0];
@@ -254,15 +803,17 @@
                         const data = await res.json();
 
                         if (!res.ok) {
-                            if (data.error === 'dates_unavailable') {
-                                alert('К сожалению, на выбранные даты номер уже забронирован. Попробуйте другие даты.');
-                            } else if (data.error === 'invalid_dates') {
-                                alert('Проверьте даты заезда и выезда.');
-                            } else if (data.error === 'invalid_phone') {
-                                alert('Проверьте номер телефона.');
-                            } else {
-                                alert('Не удалось отправить заявку. Попробуйте позже.');
-                            }
+                            const errMap = {
+                                dates_unavailable: 'К сожалению, на выбранные даты номер уже забронирован. Попробуйте другие даты.',
+                                invalid_dates: 'Проверьте даты заезда и выезда.',
+                                past_dates: 'Даты не могут быть в прошлом.',
+                                invalid_phone_format: 'Проверьте номер телефона. Пример: +7 701 123 45 67',
+                                invalid_phone_prefix: 'Введите казахстанский номер, начинающийся на +7.',
+                                too_many_requests: 'Слишком много запросов. Попробуйте через 10 минут.',
+                                name_too_short: 'Имя слишком короткое.',
+                                name_no_letters: 'В имени должны быть буквы.'
+                            };
+                            alert(errMap[data.error] || 'Не удалось отправить заявку. Попробуйте позже.');
                             return;
                         }
 
@@ -272,10 +823,22 @@
                     } catch (e) {
                         console.error(e);
                         alert('Ошибка сети. Проверьте подключение.');
+                    } finally {
+                        this.submitting = false;
                     }
                 }
             }
         }
     </script>
+<!-- Sticky WhatsApp -->
+    <a x-show="!loading && tenant?.owner_phone" x-cloak
+       :href="whatsappLink()"
+       target="_blank"
+       class="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all z-40 flex items-center gap-2 px-4 py-3 group">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+        </svg>
+        <span class="hidden sm:inline text-sm font-medium">WhatsApp</span>
+    </a>
 </body>
 </html>
