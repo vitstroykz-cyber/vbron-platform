@@ -10,6 +10,7 @@ import bookingsRouter from './routes/bookings.js';
 import authRouter from './routes/auth.js';
 import adminBookingsRouter from './routes/admin-bookings.js';
 import adminRoomsRouter from './routes/admin-rooms.js';
+import adminTenantRouter from './routes/admin-tenant.js';
 import { globalLimiter } from './middleware/rate-limit.js';
 
 const app = express();
@@ -45,6 +46,7 @@ app.use('/api/bookings', bookingsRouter);
 app.use('/api/admin', authRouter);
 app.use('/api/admin/bookings', adminBookingsRouter);
 app.use('/api/admin/rooms', adminRoomsRouter);
+app.use('/api/admin/tenant', adminTenantRouter);
 // Корень API — для проверки
 app.get('/', (req, res) => {
     res.json({

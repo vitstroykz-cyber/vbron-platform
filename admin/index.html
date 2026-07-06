@@ -89,7 +89,10 @@
                     <button @click="setTab('rooms')"
                             :class="tab === 'rooms' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">Номера</button>
-                </div>
+                    <button @click="setTab('settings')"
+                            :class="tab === 'settings' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">Настройки</button>
+	        </div>
             </div>
         </header>
 
@@ -302,6 +305,186 @@
                             </div>
                         </div>
                     </template>
+                </div>
+            </div>
+            <!-- ВКЛАДКА НАСТРОЙКИ -->
+            <div x-show="tab === 'settings'" x-cloak class="space-y-6">
+                <div x-show="settingsLoading" class="bg-white rounded-xl p-8 text-center text-gray-500 shadow-sm">
+                    Загрузка...
+                </div>
+
+                <div x-show="!settingsLoading" x-cloak>
+                    <form @submit.prevent="saveSettings()" class="space-y-6">
+
+                        <!-- Основное -->
+                        <div class="bg-white rounded-xl shadow-sm p-5">
+                            <h3 class="font-bold text-gray-900 mb-4">Основное</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Название объекта</label>
+                                    <input type="text" x-model="settingsForm.name" maxlength="200"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Телефон / WhatsApp</label>
+                                        <input type="tel" x-model="settingsForm.owner_phone" placeholder="+7..."
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Email (необязательно)</label>
+                                        <input type="email" x-model="settingsForm.owner_email"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Telegram chat_id для уведомлений</label>
+                                    <input type="text" x-model="settingsForm.telegram_chat_id"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+                                    <div class="text-[10px] text-gray-400 mt-1">
+                                        Напишите вашему боту /start и получите chat_id через
+                                        <a href="https://t.me/userinfobot" target="_blank" class="text-blue-600 underline">@userinfobot</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Адрес и карта -->
+                        <div class="bg-white rounded-xl shadow-sm p-5">
+                            <h3 class="font-bold text-gray-900 mb-4">Адрес и локация</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Адрес</label>
+                                    <input type="text" x-model="settingsForm.address" maxlength="500"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    <div class="text-[10px] text-gray-400 mt-1">Показывается в hero и в блоке «Как добраться»</div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Широта (lat)</label>
+                                        <input type="text" x-model="settingsForm.lat"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                                               placeholder="43.8720">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Долгота (lng)</label>
+                                        <input type="text" x-model="settingsForm.lng"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                                               placeholder="77.0687">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Ссылка на 2GIS</label>
+                                    <input type="url" x-model="settingsForm.map_2gis_url" maxlength="500"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Тексты сайта -->
+                        <div class="bg-white rounded-xl shadow-sm p-5">
+                            <h3 class="font-bold text-gray-900 mb-4">Тексты на сайте</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Плашка над заголовком</label>
+                                    <input type="text" x-model="settingsForm.hero_badge" maxlength="200"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                           placeholder="📍 Капчагайское водохранилище · 55 км от Алматы">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Подзаголовок Hero</label>
+                                    <input type="text" x-model="settingsForm.hero_subtitle" maxlength="300"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                           placeholder="Уютные домики на первой линии, сауна с бассейном...">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Блок «О нас»</label>
+                                    <textarea x-model="settingsForm.about_text" rows="5" maxlength="5000"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                              placeholder="Мы открылись в 2019 году..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Правила -->
+                        <div class="bg-white rounded-xl shadow-sm p-5">
+                            <h3 class="font-bold text-gray-900 mb-4">Правила</h3>
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+			        <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Время заезда</label>
+                                    <input type="time" x-model="settingsForm.checkin_time"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Время выезда</label>
+                                    <input type="time" x-model="settingsForm.checkout_time"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Процент предоплаты</label>
+                                    <input type="number" x-model="settingsForm.prepayment_percent" min="0" max="99" step="1"
+                                           @input="settingsForm.prepayment_percent = String(settingsForm.prepayment_percent).slice(0, 2)"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                           placeholder="30">
+                                    <div class="text-[10px] text-gray-400 mt-1">От 0 до 99%</div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Условия отмены брони</label>
+                                    <textarea x-model="settingsForm.cancellation_policy" rows="3" maxlength="2000"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                              placeholder="Бесплатная отмена не позднее чем за 7 дней..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Дополнительные правила</label>
+                                    <textarea x-model="settingsForm.rules_text" rows="3" maxlength="2000"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                              placeholder="Курение только на улице, тихое время..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Цифры (для блока «О нас») -->
+                        <div class="bg-white rounded-xl shadow-sm p-5">
+                            <h3 class="font-bold text-gray-900 mb-4">Цифры</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Год открытия</label>
+                                    <input type="number" x-model="settingsForm.started_year" min="1900" max="2100" step="1"
+                                           @input="settingsForm.started_year = String(settingsForm.started_year).slice(0, 4)"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                           placeholder="2019">
+                                    <div class="text-[10px] text-gray-400 mt-1">4 цифры, например 2019</div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Гостей за всё время</label>
+                                    <input type="text" x-model="settingsForm.guests_count" maxlength="20"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                           placeholder="3000+">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Рейтинг</label>
+                                    <input type="text" x-model="settingsForm.rating" maxlength="3" inputmode="decimal"
+                                           @input="settingsForm.rating = formatRatingInput(settingsForm.rating)"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                                           placeholder="4.8">
+                                    <div class="text-[10px] text-gray-400 mt-1">От 1.0 до 5.0, точка автоматически</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ошибка + сохранить -->
+                        <div x-show="settingsError" x-cloak class="text-red-600 text-sm bg-red-50 border border-red-200 rounded p-3" x-text="settingsError"></div>
+                        <div x-show="settingsSaved" x-cloak class="text-green-700 text-sm bg-green-50 border border-green-200 rounded p-3">✓ Настройки сохранены. Изменения появятся на сайте через несколько секунд.</div>
+
+                        <div class="sticky bottom-3">
+                            <button type="submit" :disabled="settingsSaving"
+                                    class="w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 disabled:opacity-50 shadow-lg">
+                                <span x-show="!settingsSaving">Сохранить настройки</span>
+                                <span x-show="settingsSaving">Сохранение...</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </main>
@@ -519,6 +702,19 @@
                 roomForm: { id: null, name: '', type: 'room', capacity: 2, price_per_day: 0, description: '', photosRaw: '', amenitiesRaw: '', display_order: 0, is_active: true },
                 roomError: '',
                 roomSubmitting: false,
+                // Настройки
+                settingsLoading: false,
+                settingsSaving: false,
+                settingsSaved: false,
+                settingsError: '',
+                settingsForm: {
+                    name: '', owner_phone: '', owner_email: '', telegram_chat_id: '',
+                    address: '', lat: '', lng: '', map_2gis_url: '',
+                    hero_badge: '', hero_subtitle: '', about_text: '',
+                    checkin_time: '', checkout_time: '', prepayment_percent: '',
+                    cancellation_policy: '', rules_text: '',
+                    started_year: '', guests_count: '', rating: ''
+                },
 
                 async init() {
                     this.token = localStorage.getItem('vbron_token');
@@ -602,6 +798,7 @@
                     this.tab = t;
                     if (t === 'calendar') this.loadCalendar();
                     if (t === 'rooms') this.loadRooms();
+                    if (t === 'settings') this.loadSettings();
                 },
 
                 async loadCalendar() {
@@ -835,6 +1032,118 @@
 
                 roomTypeLabel(t) {
                     return { room: 'Номер', cottage: 'Домик', sauna: 'Сауна', gazebo: 'Беседка', other: 'Другое' }[t] || t;
+                },
+// Форматирование рейтинга: пользователь вводит "49" — становится "4.9"
+                // Разрешаем только цифру, точку, цифру
+                formatRatingInput(val) {
+                    if (!val) return '';
+                    // Убираем всё что не цифра и не точка
+                    let clean = String(val).replace(/[^\d.]/g, '');
+                    // Если ввёл только цифры и уже 2 символа — вставляем точку
+                    if (/^\d{2}$/.test(clean)) {
+                        clean = clean[0] + '.' + clean[1];
+                    }
+                    // Ограничиваем формат: 1 цифра, точка, 1 цифра
+                    const m = clean.match(/^(\d)\.?(\d?)/);
+                    if (!m) return '';
+                    if (m[2]) return m[1] + '.' + m[2];
+                    return m[1];
+                },
+                async loadSettings() {
+                    this.settingsLoading = true;
+                    this.settingsError = '';
+                    this.settingsSaved = false;
+                    try {
+                        const res = await fetch(`${API}/api/admin/tenant`, { headers: this.authHeaders() });
+                        if (!res.ok) throw new Error('load failed');
+                        const data = await res.json();
+                        // Заполняем форму: сначала все поля из tenant, потом settings
+                        this.settingsForm = {
+                            name: data.tenant.name || '',
+                            owner_phone: data.tenant.owner_phone || '',
+                            owner_email: data.tenant.owner_email || '',
+                            telegram_chat_id: data.tenant.telegram_chat_id || '',
+                            address: data.settings.address || '',
+                            lat: data.settings.lat || '',
+                            lng: data.settings.lng || '',
+                            map_2gis_url: data.settings.map_2gis_url || '',
+                            hero_badge: data.settings.hero_badge || '',
+                            hero_subtitle: data.settings.hero_subtitle || '',
+                            about_text: data.settings.about_text || '',
+                            checkin_time: data.settings.checkin_time || '',
+                            checkout_time: data.settings.checkout_time || '',
+                            prepayment_percent: data.settings.prepayment_percent || '',
+                            cancellation_policy: data.settings.cancellation_policy || '',
+                            rules_text: data.settings.rules_text || '',
+                            started_year: data.settings.started_year || '',
+                            guests_count: data.settings.guests_count || '',
+                            rating: data.settings.rating || ''
+                        };
+                    } catch (e) {
+                        this.settingsError = 'Не удалось загрузить настройки';
+                    } finally {
+                        this.settingsLoading = false;
+                    }
+                },
+
+                async saveSettings() {
+                    this.settingsError = '';
+                    this.settingsSaved = false;
+                    this.settingsSaving = true;
+                    try {
+                        // 1) Обновляем tenant
+                        const tenantBody = {
+                            name: this.settingsForm.name,
+                            owner_phone: this.settingsForm.owner_phone,
+                            owner_email: this.settingsForm.owner_email || null,
+                            telegram_chat_id: this.settingsForm.telegram_chat_id || null
+                        };
+                        const r1 = await fetch(`${API}/api/admin/tenant`, {
+                            method: 'PATCH',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify(tenantBody)
+                        });
+                        const d1 = await r1.json();
+                        if (!r1.ok) {
+                            this.settingsError = d1.error === 'invalid_name' ? 'Проверьте название'
+                                : d1.error === 'invalid_email' ? 'Проверьте email'
+                                : 'Ошибка сохранения основных данных';
+                            return;
+                        }
+
+                        // 2) Обновляем settings — всё что не пусто
+                        const settingsBody = {};
+                        const settingKeys = ['address', 'lat', 'lng', 'map_2gis_url',
+                            'hero_badge', 'hero_subtitle', 'about_text',
+                            'checkin_time', 'checkout_time', 'prepayment_percent',
+                            'cancellation_policy', 'rules_text',
+                            'started_year', 'guests_count', 'rating'];
+                        for (const k of settingKeys) {
+                            settingsBody[k] = String(this.settingsForm[k] || '');
+                        }
+                        const r2 = await fetch(`${API}/api/admin/tenant/settings`, {
+                            method: 'PUT',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify({ settings: settingsBody })
+                        });
+                        const d2 = await r2.json();
+                        if (!r2.ok) {
+                            this.settingsError = 'Ошибка сохранения настроек: ' + (d2.error || 'unknown');
+                            return;
+                        }
+
+                        // Обновим глобальный tenant в UI
+                        if (this.tenant) {
+                            this.tenant.name = this.settingsForm.name;
+                            this.tenant.owner_phone = this.settingsForm.owner_phone;
+                        }
+                        this.settingsSaved = true;
+                        setTimeout(() => { this.settingsSaved = false; }, 4000);
+                    } catch (e) {
+                        this.settingsError = 'Ошибка сети';
+                    } finally {
+                        this.settingsSaving = false;
+                    }
                 },
 
                 roomNameById(id) { return this.rooms.find(r => r.id === id)?.name || ''; },

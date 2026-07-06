@@ -98,41 +98,37 @@
                    x-text="tenant?.owner_phone || ''"></a>
             </nav>
             <div class="max-w-6xl mx-auto px-6 py-24 md:py-32 text-center">
-                <div class="inline-block bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm mb-6">
-                    📍 <span x-text="tenant?.settings?.address || 'Капчагайское водохранилище'"></span>
-                </div>
-                <h1 class="text-4xl md:text-6xl font-bold mb-6" x-text="tenant?.name || ''"></h1>
-                <p class="text-xl mb-8 opacity-95 max-w-2xl mx-auto">Уютные домики на первой линии, сауна с бассейном, мангальные зоны и своя береговая линия</p>
-                <a href="#rooms"
+                <div class="inline-block bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-sm mb-6"
+                     x-show="tenant?.settings?.hero_badge || tenant?.settings?.address">
+                    <span x-text="tenant?.settings?.hero_badge || ('📍 ' + (tenant?.settings?.address || ''))"></span>
+                </div>                <h1 class="text-4xl md:text-6xl font-bold mb-6" x-text="tenant?.name || ''"></h1>
+                <p class="text-xl mb-8 opacity-95 max-w-2xl mx-auto"
+                   x-text="tenant?.settings?.hero_subtitle || 'Уютные домики на первой линии, сауна с бассейном, мангальные зоны и своя береговая линия'"></p>                <a href="#rooms"
                    class="inline-block btn-primary text-white px-8 py-3 rounded-lg font-semibold transition">
                     Выбрать номер
                 </a>
             </div>
         </header>
 
-        <!-- О нас -->
-        <section class="py-16 bg-white">
+<!-- О нас -->
+        <section class="py-16 bg-white" x-show="tenant?.settings?.about_text || true">
             <div class="max-w-6xl mx-auto px-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                     <div>
                         <h2 class="text-3xl font-bold text-gray-900 mb-4">Место, куда возвращаются</h2>
-                        <p class="text-gray-600 mb-4 leading-relaxed">
-                            Мы открылись в 2019 году с идеи «сделать своё» — семейное место у воды, без гостиничного холода и общих коридоров. За 7 лет через нас прошли больше <b>3 000 семей</b>, и большая часть возвращается второй и третий раз.
-                        </p>
-                        <p class="text-gray-600 mb-6 leading-relaxed">
-                            Территория 1,2 га, своя береговая линия 80 метров, парковка на 15 машин, беседки с мангалами, детская площадка, лодочная станция. Летом — воду возят прямо к пирсу. Зимой — топим баню на дровах и жарим шашлык на снегу.
-                        </p>
+                        <p class="text-gray-600 mb-6 leading-relaxed whitespace-pre-line"
+                           x-text="tenant?.settings?.about_text || 'Мы работаем для того, чтобы гости возвращались к нам снова и снова.'"></p>
                         <div class="grid grid-cols-3 gap-4">
-                            <div class="text-center border-l-4 border-cyan-600 pl-3">
-                                <div class="text-2xl font-bold text-gray-900">7</div>
+                            <div class="text-center border-l-4 border-cyan-600 pl-3" x-show="yearsWorking()">
+                                <div class="text-2xl font-bold text-gray-900" x-text="yearsWorking()"></div>
                                 <div class="text-xs text-gray-500">лет работы</div>
                             </div>
-                            <div class="text-center border-l-4 border-cyan-600 pl-3">
-                                <div class="text-2xl font-bold text-gray-900">3000+</div>
-                                <div class="text-xs text-gray-500">семей отдохнули</div>
+                            <div class="text-center border-l-4 border-cyan-600 pl-3" x-show="tenant?.settings?.guests_count">
+                                <div class="text-2xl font-bold text-gray-900" x-text="tenant?.settings?.guests_count"></div>
+                                <div class="text-xs text-gray-500">гостей отдохнули</div>
                             </div>
-                            <div class="text-center border-l-4 border-cyan-600 pl-3">
-                                <div class="text-2xl font-bold text-gray-900">4.8</div>
+                            <div class="text-center border-l-4 border-cyan-600 pl-3" x-show="tenant?.settings?.rating">
+                                <div class="text-2xl font-bold text-gray-900" x-text="tenant?.settings?.rating"></div>
                                 <div class="text-xs text-gray-500">средний рейтинг</div>
                             </div>
                         </div>
@@ -144,7 +140,6 @@
                 </div>
             </div>
         </section>
-
 <!-- Акции -->
         <section class="py-16 bg-gradient-to-br from-cyan-50 to-blue-50">
             <div class="max-w-6xl mx-auto px-6">
@@ -291,7 +286,7 @@
             </div>
         </section>
 
-        <!-- Правила -->
+<!-- Правила -->
         <section class="py-16 bg-white">
             <div class="max-w-4xl mx-auto px-6">
                 <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">Как всё устроено</h2>
@@ -299,18 +294,17 @@
                     <div class="flex gap-4">
                         <div class="text-3xl shrink-0">⏰</div>
                         <div>
-                            <div class="font-semibold mb-1">Заезд с 14:00, выезд до 12:00</div>
+                            <div class="font-semibold mb-1" x-text="'Заезд с ' + (tenant?.settings?.checkin_time || '14:00') + ', выезд до ' + (tenant?.settings?.checkout_time || '12:00')"></div>
                             <div class="text-sm text-gray-600">Раннее заселение и поздний выезд — по согласованию, если номер свободен.</div>
                         </div>
-                    </div>
+                    </div>                    
                     <div class="flex gap-4">
                         <div class="text-3xl shrink-0">💳</div>
                         <div>
-                            <div class="font-semibold mb-1">Предоплата 30% через Kaspi</div>
+                            <div class="font-semibold mb-1" x-text="'Предоплата ' + (tenant?.settings?.prepayment_percent || '30') + '% через Kaspi'"></div>
                             <div class="text-sm text-gray-600">Подтверждаем бронь по факту предоплаты. Остаток при заезде — карта или наличные.</div>
                         </div>
-                    </div>
-                    <div class="flex gap-4">
+                    </div>                    <div class="flex gap-4">
                         <div class="text-3xl shrink-0">🐕</div>
                         <div>
                             <div class="font-semibold mb-1">С небольшими собаками — можно</div>
@@ -426,11 +420,9 @@
                             <span class="font-semibold">Условия отмены брони?</span>
                             <span class="text-2xl text-gray-400" x-text="open === 3 ? '−' : '+'"></span>
                         </button>
-                        <div x-show="open === 3" x-cloak class="px-5 pb-5 text-gray-600">
-                            Бесплатная отмена не позднее чем за 7 дней до заезда — возвращаем 100% предоплаты. За 3-7 дней — возвращаем 50%. Позже — предоплата не возвращается.
-                        </div>
-                    </div>
-                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <div x-show="open === 3" x-cloak class="px-5 pb-5 text-gray-600 whitespace-pre-line"
+                             x-text="tenant?.settings?.cancellation_policy || 'Бесплатная отмена не позднее чем за 7 дней до заезда — возвращаем 100% предоплаты. За 3-7 дней — возвращаем 50%. Позже — предоплата не возвращается.'"></div>
+                    </div>                    <div class="border border-gray-200 rounded-xl overflow-hidden">
                         <button @click="open = open === 4 ? null : 4" class="w-full p-5 text-left flex justify-between items-center hover:bg-gray-50">
                             <span class="font-semibold">Есть ли Wi-Fi и связь?</span>
                             <span class="text-2xl text-gray-400" x-text="open === 4 ? '−' : '+'"></span>
@@ -499,7 +491,9 @@
                             <span>Итого</span>
                             <span class="text-lg" x-text="formatPrice(calcTotal())"></span>
                         </div>
-                        <div class="text-xs text-gray-500 pt-1">Предоплата 30% (<span x-text="formatPrice(calcTotal() * 0.3)"></span>) — при подтверждении</div>
+                        <div class="text-xs text-gray-500 pt-1">
+                            Предоплата <span x-text="prepaymentPercent()"></span>% (<span x-text="formatPrice(calcTotal() * prepaymentPercent() / 100)"></span>) — при подтверждении
+                        </div>
                     </div>
 
                     <!-- Honeypot -->
@@ -656,6 +650,19 @@
                     const phone = (this.tenant?.owner_phone || '').replace(/\D/g, '');
                     const msg = `Здравствуйте! Интересует бронирование в ${this.tenant?.name || ''}`;
                     return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+                },
+                yearsWorking() {
+                    const y = parseInt(this.tenant?.settings?.started_year, 10);
+                    if (!y || y < 1900 || y > 2100) return null;
+                    const now = new Date().getFullYear();
+                    const diff = now - y;
+                    return diff > 0 ? diff : null;
+                },
+
+                prepaymentPercent() {
+                    const p = parseInt(this.tenant?.settings?.prepayment_percent, 10);
+                    if (isNaN(p) || p < 0 || p > 100) return 30;
+                    return p;
                 },
                 formatPrice(price) {
                     return new Intl.NumberFormat('ru-RU').format(Math.round(price)) + ' ₸';
