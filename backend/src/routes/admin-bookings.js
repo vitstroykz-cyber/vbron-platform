@@ -279,4 +279,86 @@ router.get('/export/csv', async (req, res) => {
         res.status(500).json({ error: 'internal_error' });
     }
 });
+// GET /api/admin/bookings/analytics/summary — аналитика для дашборда
+router.get('/analytics/summary', async (req, res) => {
+    try {
+        const tenantId = req.tenant.id;
+
+        // 1. Заявки по дням за последние 30 дней
+        const byDayResult = await query(
+            `SELECT DATE(created_at) AS day, COUNT(*)::int AS count
+             FROM bookings
+             WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
+             GROUP BY DATE(created_at)
+             ORDER BY day`,
+            [tenantId]
+        );
+
+        // 2. Выручка (по оплаченным и подтверждённым броням) — всего и за 30 дней
+        const revenueResult = await query(
+            `SELECT
+                COALESCE(SUM(total_price) FILTER (WHERE status IN ('confirmed','paid','completed')), 0) AS total_revenue,
+                COALESCE(SUM(total_price) FILTER (WHERE status IN ('confirmed','paid','completed') AND created_at >= NOW() - INTERVAL '30 days'), 0) AS revenue_30d
+             FROM bookings
+             WHERE tenant_id = $1`,
+            [tenantId]
+        );
+
+        // 3. Конверсия по статусам (за всё время)
+        const statusResult = await query(
+            `SELECT status, COUNT(*)::int AS count
+             FROM bookings
+             WHERE tenant_id = $1
+             GROUP BY status`,
+            [tenantId]
+        );
+
+        // 4. Топ номеров по количеству броней
+        const topRoomsResult = await query(
+            `SELECT r.name, COUNT(b.id)::int AS bookings_count,
+                    COALESCE(SUM(b.total_price) FILTER (WHERE b.status IN ('confirmed','paid','completed')), 0) AS revenue
+             FROM rooms r
+             LEFT JOIN bookings b ON b.room_id = r.id
+             WHERE r.tenant_id = $1
+             GROUP BY r.id, r.name
+             ORDER BY bookings_count DESC
+             LIMIT 10`,
+            [tenantId]
+        );
+
+        // 5. Источники заявок
+        const sourceResult = await query(
+            `SELECT source, COUNT(*)::int AS count
+             FROM bookings
+             WHERE tenant_id = $1
+             GROUP BY source`,
+            [tenantId]
+        );
+
+        // 6. Общее количество заявок и средний чек
+        const totalsResult = await query(
+            `SELECT COUNT(*)::int AS total_bookings,
+                    COALESCE(AVG(total_price) FILTER (WHERE status IN ('confirmed','paid','completed')), 0) AS avg_check
+             FROM bookings
+             WHERE tenant_id = $1`,
+            [tenantId]
+        );
+
+        res.json({
+            by_day: byDayResult.rows.map(r => ({ day: r.day.toISOString().slice(0, 10), count: r.count })),
+            revenue: {
+                total: Number(revenueResult.rows[0].total_revenue),
+                last_30d: Number(revenueResult.rows[0].revenue_30d)
+            },
+            status_breakdown: statusResult.rows.reduce((acc, r) => { acc[r.status] = r.count; return acc; }, {}),
+            top_rooms: topRoomsResult.rows.map(r => ({ name: r.name, bookings_count: r.bookings_count, revenue: Number(r.revenue) })),
+            sources: sourceResult.rows.reduce((acc, r) => { acc[r.source] = r.count; return acc; }, {}),
+            total_bookings: totalsResult.rows[0].total_bookings,
+            avg_check: Math.round(Number(totalsResult.rows[0].avg_check))
+        });
+    } catch (err) {
+        console.error('GET /admin/bookings/analytics/summary error:', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
 export default router;

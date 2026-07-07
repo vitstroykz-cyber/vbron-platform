@@ -7,6 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E📋%3C/text%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
         [x-cloak] { display: none !important; }
@@ -92,7 +93,10 @@
                     <button @click="setTab('settings')"
                             :class="tab === 'settings' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
                             class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">Настройки</button>
-	        </div>
+                    <button @click="setTab('analytics')"
+                            :class="tab === 'analytics' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                            class="px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap">Аналитика</button>
+                </div>
             </div>
         </header>
 
@@ -549,6 +553,78 @@
                     </form>
                 </div>
             </div>
+            </div>
+<!-- ВКЛАДКА АНАЛИТИКА -->
+            <div x-show="tab === 'analytics'" x-cloak>
+                <div x-show="analyticsLoading" class="bg-white rounded-xl p-8 text-center text-gray-500 shadow-sm">
+                    Загрузка аналитики...
+                </div>
+
+                <div x-show="!analyticsLoading" x-cloak>
+                    <!-- Ключевые метрики -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                        <div class="bg-white rounded-xl p-4 shadow-sm">
+                            <div class="text-xs text-gray-500 mb-1">Всего заявок</div>
+                            <div class="text-2xl font-bold text-gray-900" x-text="analytics.total_bookings || 0"></div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 shadow-sm">
+                            <div class="text-xs text-gray-500 mb-1">Выручка (30 дней)</div>
+                            <div class="text-2xl font-bold text-emerald-600" x-text="formatPrice(analytics.revenue?.last_30d || 0)"></div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 shadow-sm">
+                            <div class="text-xs text-gray-500 mb-1">Выручка (всего)</div>
+                            <div class="text-2xl font-bold text-emerald-700" x-text="formatPrice(analytics.revenue?.total || 0)"></div>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 shadow-sm">
+                            <div class="text-xs text-gray-500 mb-1">Средний чек</div>
+                            <div class="text-2xl font-bold text-blue-600" x-text="formatPrice(analytics.avg_check || 0)"></div>
+                        </div>
+                    </div>
+
+                    <!-- График заявок по дням -->
+                    <div class="bg-white rounded-xl p-4 shadow-sm mb-6">
+                        <h3 class="font-bold text-gray-900 mb-3">Заявки за последние 30 дней</h3>
+                        <div class="relative" style="height: 250px;">
+                            <canvas id="chartByDay"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Конверсия по статусам -->
+                        <div class="bg-white rounded-xl p-4 shadow-sm">
+                            <h3 class="font-bold text-gray-900 mb-3">Статусы заявок</h3>
+                            <div class="relative" style="height: 220px;">
+                                <canvas id="chartStatus"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Источники заявок -->
+                        <div class="bg-white rounded-xl p-4 shadow-sm">
+                            <h3 class="font-bold text-gray-900 mb-3">Источники заявок</h3>
+                            <div class="relative" style="height: 220px;">
+                                <canvas id="chartSources"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Топ номеров -->
+                    <div class="bg-white rounded-xl p-4 shadow-sm mt-4">
+                        <h3 class="font-bold text-gray-900 mb-3">Популярность номеров</h3>
+                        <div x-show="(analytics.top_rooms || []).length === 0" class="text-gray-500 text-sm text-center py-4">Пока нет данных</div>
+                        <div class="space-y-2">
+                            <template x-for="room in (analytics.top_rooms || [])" :key="room.name">
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                    <div>
+                                        <div class="font-medium text-gray-900" x-text="room.name"></div>
+                                        <div class="text-xs text-gray-500" x-text="room.bookings_count + ' броней'"></div>
+                                    </div>
+                                    <div class="text-sm font-semibold text-emerald-600" x-text="formatPrice(room.revenue)"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <!-- Модалка просмотра брони -->
@@ -780,6 +856,9 @@
                 roomPhotos: [],
                 photoUploading: false,
                 photoError: '',
+                analyticsLoading: false,
+                analytics: {},
+                charts: {},
                 roomSubmitting: false,
                 // Настройки
                 settingsLoading: false,
@@ -885,6 +964,7 @@
                     if (t === 'calendar') this.loadCalendar();
                     if (t === 'rooms') this.loadRooms();
                     if (t === 'settings') this.loadSettings();
+                    if (t === 'analytics') this.loadAnalytics();
                 },
 
                 async loadCalendar() {
@@ -1115,6 +1195,89 @@
                         if (!res.ok) { alert('Не удалось удалить'); return; }
                         await this.loadRooms();
                     } catch (e) { console.error(e); }
+                },
+                async loadAnalytics() {
+                    this.analyticsLoading = true;
+                    try {
+                        const res = await fetch(`${API}/api/admin/bookings/analytics/summary`, { headers: this.authHeaders() });
+                        if (!res.ok) return;
+                        this.analytics = await res.json();
+                        this.$nextTick(() => this.renderCharts());
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        this.analyticsLoading = false;
+                    }
+                },
+
+                renderCharts() {
+                    // Уничтожаем старые графики перед перерисовкой
+                    Object.values(this.charts).forEach(c => c?.destroy());
+
+                    // График по дням
+                    const byDay = this.analytics.by_day || [];
+                    const ctxDay = document.getElementById('chartByDay');
+                    if (ctxDay) {
+                        this.charts.byDay = new Chart(ctxDay, {
+                            type: 'bar',
+                            data: {
+                                labels: byDay.map(d => this.formatDateShort(d.day)),
+                                datasets: [{
+                                    label: 'Заявки',
+                                    data: byDay.map(d => d.count),
+                                    backgroundColor: '#2563eb',
+                                    borderRadius: 4
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                            }
+                        });
+                    }
+
+                    // Статусы
+                    const statusLabels = { new: 'Новые', confirmed: 'Подтверждено', paid: 'Оплачено', cancelled: 'Отменено', completed: 'Завершено', no_show: 'Не пришёл' };
+                    const statusColors = { new: '#3b82f6', confirmed: '#16a34a', paid: '#059669', cancelled: '#9ca3af', completed: '#6b7280', no_show: '#ef4444' };
+                    const statusData = this.analytics.status_breakdown || {};
+                    const statusKeys = Object.keys(statusData).filter(k => statusData[k] > 0);
+
+                    const ctxStatus = document.getElementById('chartStatus');
+                    if (ctxStatus && statusKeys.length > 0) {
+                        this.charts.status = new Chart(ctxStatus, {
+                            type: 'doughnut',
+                            data: {
+                                labels: statusKeys.map(k => statusLabels[k] || k),
+                                datasets: [{
+                                    data: statusKeys.map(k => statusData[k]),
+                                    backgroundColor: statusKeys.map(k => statusColors[k] || '#d1d5db')
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+                    }
+
+                    // Источники
+                    const sourceLabels = { site: 'Сайт', whatsapp: 'WhatsApp', phone: 'Телефон', manual: 'Вручную', walkin: 'Пришёл сам' };
+                    const sourceData = this.analytics.sources || {};
+                    const sourceKeys = Object.keys(sourceData).filter(k => sourceData[k] > 0);
+
+                    const ctxSources = document.getElementById('chartSources');
+                    if (ctxSources && sourceKeys.length > 0) {
+                        this.charts.sources = new Chart(ctxSources, {
+                            type: 'pie',
+                            data: {
+                                labels: sourceKeys.map(k => sourceLabels[k] || k),
+                                datasets: [{
+                                    data: sourceKeys.map(k => sourceData[k]),
+                                    backgroundColor: ['#0e7490', '#f59e0b', '#8b5cf6', '#ec4899', '#10b981']
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+                    }
                 },
 
                 roomTypeLabel(t) {
