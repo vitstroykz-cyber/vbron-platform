@@ -200,5 +200,67 @@ router.post('/tenants/:id/reset-password', async (req, res) => {
         res.status(500).json({ error: 'internal_error' });
     }
 });
+// PUT /api/superadmin/tenants/:id — полное редактирование клиента
+router.put('/tenants/:id', async (req, res) => {
+    try {
+        const tenantId = parseInt(req.params.id, 10);
+        const { name, owner_name, owner_phone, owner_email, telegram_chat_id } = req.body;
 
+        if (!name || name.trim().length < 2) {
+            return res.status(400).json({ error: 'invalid_name' });
+        }
+        if (!owner_phone) {
+            return res.status(400).json({ error: 'owner_phone_required' });
+        }
+
+        const result = await query(
+            `UPDATE tenants SET name=$1, owner_name=$2, owner_phone=$3, owner_email=$4, telegram_chat_id=$5
+             WHERE id=$6
+             RETURNING id, slug, name, owner_name, owner_phone, owner_email, telegram_chat_id`,
+            [name.trim(), owner_name || null, owner_phone, owner_email || null, telegram_chat_id || null, tenantId]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: 'tenant_not_found' });
+        }
+
+        res.json({ ok: true, tenant: result.rows[0] });
+    } catch (err) {
+        console.error('PUT /superadmin/tenants error:', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
+
+// DELETE /api/superadmin/tenants/:id — полное удаление клиента (осторожно!)
+router.delete('/tenants/:id', async (req, res) => {
+    try {
+        const tenantId = parseInt(req.params.id, 10);
+
+        // Требуем явное подтверждение через query параметр — защита от случайного удаления
+        if (req.query.confirm !== 'yes') {
+            return res.status(400).json({ error: 'confirmation_required' });
+        }
+
+        await query('BEGIN');
+        try {
+            // CASCADE в схеме БД сам удалит users, rooms, bookings, reviews, settings
+            const result = await query(
+                `DELETE FROM tenants WHERE id = $1 RETURNING slug`,
+                [tenantId]
+            );
+            if (result.rowCount === 0) {
+                await query('ROLLBACK');
+                return res.status(404).json({ error: 'tenant_not_found' });
+            }
+            await query('COMMIT');
+            res.json({ ok: true, deleted_slug: result.rows[0].slug });
+        } catch (err) {
+            await query('ROLLBACK');
+            throw err;
+        }
+    } catch (err) {
+        console.error('DELETE /superadmin/tenants error:', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
 export default router;

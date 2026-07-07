@@ -214,5 +214,69 @@ router.get('/calendar/data', async (req, res) => {
         res.status(500).json({ error: 'internal_error' });
     }
 });
+// GET /api/admin/bookings/export/csv — скачать все брони в CSV
+router.get('/export/csv', async (req, res) => {
+    try {
+        const result = await query(
+            `SELECT b.id, b.guest_name, b.guest_phone, b.guest_email,
+                    b.check_in, b.check_out, b.guests_count, b.total_price,
+                    b.status, b.payment_status, b.source, b.notes, b.created_at,
+                    r.name AS room_name
+             FROM bookings b
+             JOIN rooms r ON r.id = b.room_id
+             WHERE b.tenant_id = $1
+             ORDER BY b.created_at DESC`,
+            [req.tenant.id]
+        );
 
+        const statusLabels = {
+            new: 'Новая', confirmed: 'Подтверждена', paid: 'Оплачено',
+            cancelled: 'Отменена', completed: 'Завершена', no_show: 'Не пришёл'
+        };
+        const paymentLabels = {
+            unpaid: 'Не оплачено', prepaid: 'Предоплата', paid: 'Оплачено', refunded: 'Возврат'
+        };
+        const sourceLabels = {
+            site: 'Сайт', whatsapp: 'WhatsApp', phone: 'Телефон', manual: 'Вручную', walkin: 'Пришёл сам'
+        };
+
+        // Формируем CSV с BOM для корректного открытия кириллицы в Excel
+        const headers = ['ID', 'Гость', 'Телефон', 'Email', 'Номер', 'Заезд', 'Выезд',
+                         'Гостей', 'Сумма', 'Статус', 'Оплата', 'Источник', 'Комментарий', 'Создана'];
+
+        const escapeCsv = (val) => {
+            if (val == null) return '';
+            const str = String(val);
+            if (str.includes(';') || str.includes('"') || str.includes('\n') || str.includes(',')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        };
+        const rows = result.rows.map(b => [
+            b.id,
+            b.guest_name,
+            b.guest_phone,
+            b.guest_email || '',
+            b.room_name,
+            new Date(b.check_in).toLocaleDateString('ru-RU'),
+            new Date(b.check_out).toLocaleDateString('ru-RU'),
+            b.guests_count,
+            b.total_price,
+            statusLabels[b.status] || b.status,
+            paymentLabels[b.payment_status] || b.payment_status,
+            sourceLabels[b.source] || b.source,
+            b.notes || '',
+            new Date(b.created_at).toLocaleString('ru-RU')
+        ].map(escapeCsv).join(';'));
+
+        const csv = '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
+        const filename = `bookings_${req.tenant.slug}_${new Date().toISOString().slice(0,10)}.csv`;
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(csv);
+    } catch (err) {
+        console.error('GET /admin/bookings/export/csv error:', err);
+        res.status(500).json({ error: 'internal_error' });
+    }
+});
 export default router;

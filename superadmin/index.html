@@ -74,11 +74,17 @@
                                 </div>
                             </div>
                             <div class="flex flex-col gap-1 shrink-0">
+                                <button @click="openEditModal(t)" class="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                    Редактировать
+                                </button>
                                 <button @click="toggleActive(t)" class="text-xs px-2 py-1 rounded" :class="t.is_active ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'">
                                     <span x-text="t.is_active ? 'Отключить' : 'Включить'"></span>
                                 </button>
                                 <button @click="resetPassword(t)" class="text-xs px-2 py-1 rounded bg-amber-50 text-amber-700 hover:bg-amber-100">
                                     Сбросить пароль
+                                </button>
+                                <button @click="confirmDelete(t)" class="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">
+                                    Удалить
                                 </button>
                             </div>
                         </div>
@@ -213,6 +219,64 @@
         </div>
     </div>
 
+<!-- Модалка редактирования клиента -->
+    <div x-show="editModal" x-cloak @click.self="editModal = false"
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Редактирование клиента</h3>
+                <button @click="editModal = false" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">×</button>
+            </div>
+            <form @submit.prevent="submitEdit()" class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Поддомен</label>
+                    <input type="text" :value="editTenant.slug" disabled
+                           class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 font-mono text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
+                    <input type="text" x-model="editTenant.name" required maxlength="200"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Имя владельца</label>
+                        <input type="text" x-model="editTenant.owner_name"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
+                        <input type="tel" x-model="editTenant.owner_phone" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" x-model="editTenant.owner_email"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Telegram chat_id</label>
+                    <input type="text" x-model="editTenant.telegram_chat_id"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Тариф</label>
+                    <select x-model="editTenant.plan" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="start">Старт</option>
+                        <option value="bron">Бронь</option>
+                        <option value="premium">Премиум</option>
+                    </select>
+                </div>
+                <div x-show="editError" x-cloak class="text-red-600 text-sm" x-text="editError"></div>
+                <button type="submit" :disabled="editSaving"
+                        class="w-full bg-blue-900 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-800 disabled:opacity-50">
+                    <span x-show="!editSaving">Сохранить</span>
+                    <span x-show="editSaving">Сохранение...</span>
+                </button>
+            </form>
+        </div>
+    </div>
     <script>
         const API = 'https://api.vbron.kz';
 
@@ -229,6 +293,10 @@
                 creating: false,
                 resultModal: false,
                 result: null,
+                editModal: false,
+                editTenant: { id: null, slug: '', name: '', owner_name: '', owner_phone: '', owner_email: '', telegram_chat_id: '', plan: 'start' },
+                editError: '',
+                editSaving: false,
 
                 init() {
                     const saved = sessionStorage.getItem('vbron_superadmin_pw');
@@ -364,7 +432,75 @@
                         alert(`Новый пароль для ${data.email}:\n\n${data.new_password}\n\nСкопируйте сейчас — он больше не покажется.`);
                     } catch (e) { console.error(e); }
                 },
+                openEditModal(t) {
+                    this.editTenant = {
+                        id: t.id, slug: t.slug, name: t.name,
+                        owner_name: t.owner_name || '', owner_phone: t.owner_phone || '',
+                        owner_email: t.owner_email || '', telegram_chat_id: t.telegram_chat_id || '',
+                        plan: t.plan
+                    };
+                    this.editError = '';
+                    this.editModal = true;
+                },
 
+                async submitEdit() {
+                    this.editError = '';
+                    this.editSaving = true;
+                    try {
+                        // Обновляем основные данные
+                        const r1 = await fetch(`${API}/api/superadmin/tenants/${this.editTenant.id}`, {
+                            method: 'PUT',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify({
+                                name: this.editTenant.name,
+                                owner_name: this.editTenant.owner_name,
+                                owner_phone: this.editTenant.owner_phone,
+                                owner_email: this.editTenant.owner_email,
+                                telegram_chat_id: this.editTenant.telegram_chat_id
+                            })
+                        });
+                        const d1 = await r1.json();
+                        if (!r1.ok) {
+                            this.editError = d1.error === 'invalid_name' ? 'Проверьте название' : 'Ошибка сохранения';
+                            return;
+                        }
+
+                        // Обновляем план отдельным запросом (уже существующий PATCH)
+                        const r2 = await fetch(`${API}/api/superadmin/tenants/${this.editTenant.id}`, {
+                            method: 'PATCH',
+                            headers: this.authHeaders(),
+                            body: JSON.stringify({ plan: this.editTenant.plan })
+                        });
+                        if (!r2.ok) {
+                            this.editError = 'Название сохранено, но не удалось изменить тариф';
+                            return;
+                        }
+
+                        this.editModal = false;
+                        await this.loadTenants();
+                    } catch (e) {
+                        this.editError = 'Ошибка сети';
+                    } finally {
+                        this.editSaving = false;
+                    }
+                },
+
+                async confirmDelete(t) {
+                    const typed = prompt(`Это НЕОБРАТИМО удалит клиента «${t.name}» (${t.slug}.vbron.kz) со всеми номерами и бронями.\n\nВведите slug клиента для подтверждения: ${t.slug}`);
+                    if (typed !== t.slug) {
+                        if (typed !== null) alert('Slug не совпадает, удаление отменено');
+                        return;
+                    }
+                    try {
+                        const res = await fetch(`${API}/api/superadmin/tenants/${t.id}?confirm=yes`, {
+                            method: 'DELETE',
+                            headers: this.authHeaders()
+                        });
+                        if (!res.ok) { alert('Не удалось удалить'); return; }
+                        await this.loadTenants();
+                        alert(`Клиент «${t.slug}» удалён.\n\nНе забудьте вручную удалить Proxy Host в NPM для ${t.slug}.vbron.kz`);
+                    } catch (e) { console.error(e); }
+                },
                 planClass(p) {
                     return { start: 'bg-gray-100 text-gray-700', bron: 'bg-blue-100 text-blue-700', premium: 'bg-purple-100 text-purple-700' }[p] || 'bg-gray-100';
                 },
