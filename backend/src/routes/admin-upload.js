@@ -14,10 +14,12 @@ router.use(requireAuth);
 const UPLOAD_DIR = process.env.UPLOAD_DIR || '/uploads';
 const ROOMS_FULL_DIR = path.join(UPLOAD_DIR, 'rooms', 'full');
 const ROOMS_THUMB_DIR = path.join(UPLOAD_DIR, 'rooms', 'thumb');
+const TENANT_DIR = path.join(UPLOAD_DIR, 'tenant');
 
 // Создаём папки при старте, если их нет
 await fs.mkdir(ROOMS_FULL_DIR, { recursive: true });
 await fs.mkdir(ROOMS_THUMB_DIR, { recursive: true });
+await fs.mkdir(TENANT_DIR, { recursive: true });
 
 // Multer — принимаем в память (потом обработаем через sharp)
 const upload = multer({
@@ -52,40 +54,46 @@ router.post('/', (req, res) => {
         if (!req.file) {
             return res.status(400).json({ error: 'no_file' });
         }
-
         try {
-            // Уникальное имя: короткий hash + расширение jpg (мы всё пересохраняем в jpg для консистентности)
+            const uploadType = req.query.type === 'tenant' ? 'tenant' : 'room';
             const hash = crypto.randomBytes(8).toString('hex');
             const tenantSlug = req.tenant.slug;
             const filename = `${tenantSlug}_${hash}.jpg`;
 
-            const fullPath = path.join(ROOMS_FULL_DIR, filename);
-            const thumbPath = path.join(ROOMS_THUMB_DIR, filename);
+            let url, thumbUrl;
 
-            // Полная версия: макс 1920px по большей стороне, quality 82
-            await sharp(req.file.buffer)
-                .rotate() // фиксит EXIF-ориентацию с телефонов
-                .resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true })
-                .jpeg({ quality: 82, progressive: true, mozjpeg: true })
-                .toFile(fullPath);
+            if (uploadType === 'tenant') {
+                // Фото сайта (hero, about) — без миниатюры, сразу побольше
+                const fullPath = path.join(TENANT_DIR, filename);
+                await sharp(req.file.buffer)
+                    .rotate()
+                    .resize({ width: 2400, height: 2400, fit: 'inside', withoutEnlargement: true })
+                    .jpeg({ quality: 85, progressive: true, mozjpeg: true })
+                    .toFile(fullPath);
 
-            // Миниатюра: макс 400px, quality 75
-            await sharp(req.file.buffer)
-                .rotate()
-                .resize({ width: 400, height: 400, fit: 'inside', withoutEnlargement: true })
-                .jpeg({ quality: 75, progressive: true, mozjpeg: true })
-                .toFile(thumbPath);
+                url = `https://cdn.vbron.kz/tenant/${filename}`;
+                thumbUrl = url;
+            } else {
+                const fullPath = path.join(ROOMS_FULL_DIR, filename);
+                const thumbPath = path.join(ROOMS_THUMB_DIR, filename);
 
-            const baseUrl = 'https://cdn.vbron.kz';
-            const url = `${baseUrl}/rooms/full/${filename}`;
-            const thumbUrl = `${baseUrl}/rooms/thumb/${filename}`;
+                await sharp(req.file.buffer)
+                    .rotate()
+                    .resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true })
+                    .jpeg({ quality: 82, progressive: true, mozjpeg: true })
+                    .toFile(fullPath);
 
-            res.json({
-                ok: true,
-                url,
-                thumb_url: thumbUrl,
-                filename
-            });
+                await sharp(req.file.buffer)
+                    .rotate()
+                    .resize({ width: 400, height: 400, fit: 'inside', withoutEnlargement: true })
+                    .jpeg({ quality: 75, progressive: true, mozjpeg: true })
+                    .toFile(thumbPath);
+
+                url = `https://cdn.vbron.kz/rooms/full/${filename}`;
+                thumbUrl = `https://cdn.vbron.kz/rooms/thumb/${filename}`;
+            }
+
+            res.json({ ok: true, url, thumb_url: thumbUrl, filename });
         } catch (err) {
             console.error('upload processing error:', err);
             res.status(500).json({ error: 'processing_failed' });

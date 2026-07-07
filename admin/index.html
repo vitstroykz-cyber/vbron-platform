@@ -380,7 +380,43 @@
                                 </div>
                             </div>
                         </div>
-
+<!-- Фото сайта -->
+                        <div class="bg-white rounded-xl shadow-sm p-5">
+                            <h3 class="font-bold text-gray-900 mb-4">Фото сайта</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Главное фото (Hero)</label>
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-32 h-20 shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                            <img x-show="settingsForm.hero_photo_url" :src="settingsForm.hero_photo_url" class="w-full h-full object-cover">
+                                            <div x-show="!settingsForm.hero_photo_url" class="w-full h-full flex items-center justify-center text-2xl">🖼️</div>
+                                        </div>
+                                        <label class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition text-center">
+                                            <span class="text-sm text-gray-500" x-text="heroUploading ? 'Загрузка...' : 'Загрузить фото'"></span>
+                                            <span class="text-[10px] text-gray-400">Широкое фото, JPG/PNG/WebP до 5МБ</span>
+                                            <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
+                                                   @change="uploadTenantPhoto($event, 'hero_photo_url')" :disabled="heroUploading">
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Фото в блоке «О нас»</label>
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-32 h-20 shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                            <img x-show="settingsForm.about_photo_url" :src="settingsForm.about_photo_url" class="w-full h-full object-cover">
+                                            <div x-show="!settingsForm.about_photo_url" class="w-full h-full flex items-center justify-center text-2xl">🖼️</div>
+                                        </div>
+                                        <label class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition text-center">
+                                            <span class="text-sm text-gray-500" x-text="aboutUploading ? 'Загрузка...' : 'Загрузить фото'"></span>
+                                            <span class="text-[10px] text-gray-400">JPG/PNG/WebP до 5МБ</span>
+                                            <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
+                                                   @change="uploadTenantPhoto($event, 'about_photo_url')" :disabled="aboutUploading">
+                                        </label>
+                                    </div>
+                                </div>
+                                <div x-show="photoUploadError" x-cloak class="text-red-600 text-xs" x-text="photoUploadError"></div>
+                            </div>
+                        </div>
                         <!-- Тексты сайта -->
                         <div class="bg-white rounded-xl shadow-sm p-5">
                             <h3 class="font-bold text-gray-900 mb-4">Тексты на сайте</h3>
@@ -443,7 +479,29 @@
                                 </div>
                             </div>
                         </div>
-
+<!-- Акции -->
+                        <div class="bg-white rounded-xl shadow-sm p-5">
+                            <h3 class="font-bold text-gray-900 mb-1">Специальные предложения</h3>
+                            <p class="text-xs text-gray-400 mb-4">3 карточки на сайте. Оставьте поле «Заголовок» пустым, чтобы скрыть карточку.</p>
+                            <div class="space-y-4">
+                                <template x-for="n in [1,2,3]" :key="n">
+                                    <div class="border border-gray-200 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500 mb-2">Карточка <span x-text="n"></span></div>
+                                        <div class="grid grid-cols-4 gap-2 mb-2">
+                                            <input type="text" x-model="settingsForm['promo' + n + '_icon']" maxlength="4"
+                                                   class="px-2 py-2 border border-gray-300 rounded-lg text-center text-lg"
+                                                   placeholder="🌤">
+                                            <input type="text" x-model="settingsForm['promo' + n + '_title']" maxlength="100"
+                                                   class="col-span-3 px-2 py-2 border border-gray-300 rounded-lg text-sm"
+                                                   placeholder="Заголовок акции">
+                                        </div>
+                                        <textarea x-model="settingsForm['promo' + n + '_text']" rows="2" maxlength="300"
+                                                  class="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm"
+                                                  placeholder="Описание акции"></textarea>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
                         <!-- Цифры (для блока «О нас») -->
                         <div class="bg-white rounded-xl shadow-sm p-5">
                             <h3 class="font-bold text-gray-900 mb-4">Цифры</h3>
@@ -730,8 +788,15 @@
                     hero_badge: '', hero_subtitle: '', about_text: '',
                     checkin_time: '', checkout_time: '', prepayment_percent: '',
                     cancellation_policy: '', rules_text: '',
-                    started_year: '', guests_count: '', rating: ''
+                    started_year: '', guests_count: '', rating: '',
+                    hero_photo_url: '', about_photo_url: '',
+                    promo1_icon: '', promo1_title: '', promo1_text: '',
+                    promo2_icon: '', promo2_title: '', promo2_text: '',
+                    promo3_icon: '', promo3_title: '', promo3_text: ''
                 },
+                heroUploading: false,
+                aboutUploading: false,
+                photoUploadError: '',
 
                 async init() {
                     this.token = localStorage.getItem('vbron_token');
@@ -1107,6 +1172,41 @@
                         this.photoUploading = false;
                     }
                 },
+                async uploadTenantPhoto(e, targetField) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    this.photoUploadError = '';
+                    if (file.size > 5 * 1024 * 1024) {
+                        this.photoUploadError = 'Файл больше 5 МБ';
+                        e.target.value = '';
+                        return;
+                    }
+
+                    const isHero = targetField === 'hero_photo_url';
+                    if (isHero) this.heroUploading = true; else this.aboutUploading = true;
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('photo', file);
+                        const res = await fetch(`${API}/api/admin/upload?type=tenant`, {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + this.token },
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                            this.photoUploadError = data.error === 'invalid_type' ? 'Только JPG, PNG или WebP' : 'Не удалось загрузить фото';
+                            return;
+                        }
+                        this.settingsForm[targetField] = data.url;
+                    } catch (err) {
+                        this.photoUploadError = 'Ошибка сети';
+                    } finally {
+                        if (isHero) this.heroUploading = false; else this.aboutUploading = false;
+                        e.target.value = '';
+                    }
+                },
 
                 removeRoomPhoto(idx) {
                     this.roomPhotos.splice(idx, 1);
@@ -1120,7 +1220,7 @@
                         if (!res.ok) throw new Error('load failed');
                         const data = await res.json();
                         // Заполняем форму: сначала все поля из tenant, потом settings
-                        this.settingsForm = {
+                     this.settingsForm = {
                             name: data.tenant.name || '',
                             owner_phone: data.tenant.owner_phone || '',
                             owner_email: data.tenant.owner_email || '',
@@ -1139,7 +1239,18 @@
                             rules_text: data.settings.rules_text || '',
                             started_year: data.settings.started_year || '',
                             guests_count: data.settings.guests_count || '',
-                            rating: data.settings.rating || ''
+                            rating: data.settings.rating || '',
+                            hero_photo_url: data.settings.hero_photo_url || '',
+                            about_photo_url: data.settings.about_photo_url || '',
+                            promo1_icon: data.settings.promo1_icon || '',
+                            promo1_title: data.settings.promo1_title || '',
+                            promo1_text: data.settings.promo1_text || '',
+                            promo2_icon: data.settings.promo2_icon || '',
+                            promo2_title: data.settings.promo2_title || '',
+                            promo2_text: data.settings.promo2_text || '',
+                            promo3_icon: data.settings.promo3_icon || '',
+                            promo3_title: data.settings.promo3_title || '',
+                            promo3_text: data.settings.promo3_text || ''
                         };
                     } catch (e) {
                         this.settingsError = 'Не удалось загрузить настройки';
@@ -1179,7 +1290,11 @@
                             'hero_badge', 'hero_subtitle', 'about_text',
                             'checkin_time', 'checkout_time', 'prepayment_percent',
                             'cancellation_policy', 'rules_text',
-                            'started_year', 'guests_count', 'rating'];
+                            'started_year', 'guests_count', 'rating',
+                            'hero_photo_url', 'about_photo_url',
+                            'promo1_icon', 'promo1_title', 'promo1_text',
+                            'promo2_icon', 'promo2_title', 'promo2_text',
+                            'promo3_icon', 'promo3_title', 'promo3_text'];
                         for (const k of settingKeys) {
                             settingsBody[k] = String(this.settingsForm[k] || '');
                         }

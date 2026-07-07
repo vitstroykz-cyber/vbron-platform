@@ -13,9 +13,12 @@ const ALLOWED_SETTING_KEYS = [
     'started_year', 'guests_count', 'rating', 'reviews_count',
     'cancellation_policy', 'rules_text',
     'checkin_time', 'checkout_time',
-    'prepayment_percent'
+    'prepayment_percent',
+    'hero_photo_url', 'about_photo_url',
+    'promo1_icon', 'promo1_title', 'promo1_text',
+    'promo2_icon', 'promo2_title', 'promo2_text',
+    'promo3_icon', 'promo3_title', 'promo3_text'
 ];
-
 // Список полей самого tenant, которые редактируются владельцем
 const ALLOWED_TENANT_FIELDS = ['name', 'owner_phone', 'owner_email', 'telegram_chat_id'];
 
