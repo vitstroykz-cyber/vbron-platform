@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { resolveTenant } from './middleware/tenant.js';
 import healthRouter from './routes/health.js';
 import tenantRouter from './routes/tenant.js';
+import adminUploadRouter from './routes/admin-upload.js';
 import roomsRouter from './routes/rooms.js';
 import bookingsRouter from './routes/bookings.js';
 import authRouter from './routes/auth.js';
@@ -47,6 +48,7 @@ app.use('/api/admin', authRouter);
 app.use('/api/admin/bookings', adminBookingsRouter);
 app.use('/api/admin/rooms', adminRoomsRouter);
 app.use('/api/admin/tenant', adminTenantRouter);
+app.use('/api/admin/upload', adminUploadRouter);
 // Корень API — для проверки
 app.get('/', (req, res) => {
     res.json({

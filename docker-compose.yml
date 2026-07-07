@@ -34,18 +34,29 @@ services:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_DEFAULT_CHAT_ID: ${TELEGRAM_DEFAULT_CHAT_ID}
       JWT_SECRET: ${JWT_SECRET}
+      UPLOAD_DIR: /uploads
+    volumes:
+      - ./uploads:/uploads
     depends_on:
       - vbron-postgres
     networks:
       - vbron_internal
       - proxy_default
-
   vbron-tenant-site:
     image: nginx:alpine
     container_name: vbron_tenant_site
     restart: unless-stopped
     volumes:
       - ./tenant-site:/usr/share/nginx/html:ro
+    networks:
+      - proxy_default
+  vbron-cdn:
+    image: nginx:alpine
+    container_name: vbron_cdn
+    restart: unless-stopped
+    volumes:
+      - ./uploads:/usr/share/nginx/html:ro
+      - ./cdn-nginx.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - proxy_default
   vbron-admin:

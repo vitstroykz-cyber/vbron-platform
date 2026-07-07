@@ -634,11 +634,25 @@
                         <div class="text-[10px] text-gray-400 mt-1">Показывается на карточке номера</div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Фото (URL, по одному на строку)</label>
-                        <textarea x-model="roomForm.photosRaw" rows="3"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
-                                  placeholder="https://..."></textarea>
-                        <div class="text-[10px] text-gray-400 mt-1">Пока URL, скоро будет загрузка файлов</div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Фото номера</label>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2" x-show="roomPhotos.length > 0">
+                            <template x-for="(p, idx) in roomPhotos" :key="p">
+                                <div class="relative group aspect-square rounded-lg overflow-hidden border border-gray-200">
+                                    <img :src="p" class="w-full h-full object-cover">
+                                    <button type="button" @click="removeRoomPhoto(idx)"
+                                            class="absolute top-1 right-1 bg-black/60 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center hover:bg-red-600">×</button>
+                                </div>
+                            </template>
+                        </div>
+                        <label class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition"
+                               @dragover.prevent @drop.prevent="handleDrop($event)">
+                            <span class="text-2xl mb-1">📷</span>
+                            <span class="text-sm text-gray-500" x-text="photoUploading ? 'Загрузка...' : 'Нажмите или перетащите фото сюда'"></span>
+                            <span class="text-[10px] text-gray-400 mt-1">JPG, PNG, WebP — до 5 МБ</span>
+                            <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
+                                   @change="handleFileSelect($event)" :disabled="photoUploading">
+                        </label>
+                        <div x-show="photoError" x-cloak class="text-red-600 text-xs mt-1" x-text="photoError"></div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -701,6 +715,9 @@
                 roomModal: false,
                 roomForm: { id: null, name: '', type: 'room', capacity: 2, price_per_day: 0, description: '', photosRaw: '', amenitiesRaw: '', display_order: 0, is_active: true },
                 roomError: '',
+                roomPhotos: [],
+                photoUploading: false,
+                photoError: '',
                 roomSubmitting: false,
                 // Настройки
                 settingsLoading: false,
@@ -956,23 +973,24 @@
                             capacity: room.capacity || 2,
                             price_per_day: Number(room.price_per_day) || 0,
                             description: room.description || '',
-                            photosRaw: (room.photos || []).join('\n'),
                             amenitiesRaw: (room.amenities || []).join(', '),
                             display_order: room.display_order || 0,
                             is_active: room.is_active !== false
                         };
+                        this.roomPhotos = [...(room.photos || [])];
                     } else {
-                        this.roomForm = { id: null, name: '', type: 'room', capacity: 2, price_per_day: 0, description: '', photosRaw: '', amenitiesRaw: '', display_order: this.rooms.length, is_active: true };
+                        this.roomForm = { id: null, name: '', type: 'room', capacity: 2, price_per_day: 0, description: '', amenitiesRaw: '', display_order: this.rooms.length, is_active: true };
+                        this.roomPhotos = [];
                     }
+                    this.photoError = '';
                     this.roomError = '';
                     this.roomModal = true;
                 },
-
                 async submitRoom() {
                     this.roomError = '';
                     this.roomSubmitting = true;
                     try {
-                        const photos = (this.roomForm.photosRaw || '').split('\n').map(p => p.trim()).filter(p => p.length > 0);
+                        const photos = this.roomPhotos;
                         const amenities = (this.roomForm.amenitiesRaw || '').split(',').map(a => a.trim()).filter(a => a.length > 0);
                         const body = {
                             name: this.roomForm.name,
@@ -1048,6 +1066,50 @@
                     if (!m) return '';
                     if (m[2]) return m[1] + '.' + m[2];
                     return m[1];
+                },
+                async handleFileSelect(e) {
+                    const file = e.target.files[0];
+                    if (file) await this.uploadPhoto(file);
+                    e.target.value = '';
+                },
+
+                async handleDrop(e) {
+                    const file = e.dataTransfer.files[0];
+                    if (file) await this.uploadPhoto(file);
+                },
+
+                async uploadPhoto(file) {
+                    this.photoError = '';
+                    if (file.size > 5 * 1024 * 1024) {
+                        this.photoError = 'Файл больше 5 МБ';
+                        return;
+                    }
+                    this.photoUploading = true;
+                    try {
+                        const formData = new FormData();
+                        formData.append('photo', file);
+                        const res = await fetch(`${API}/api/admin/upload`, {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + this.token },
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                            this.photoError = data.error === 'file_too_large' ? 'Файл слишком большой'
+                                : data.error === 'invalid_type' ? 'Только JPG, PNG или WebP'
+                                : 'Не удалось загрузить фото';
+                            return;
+                        }
+                        this.roomPhotos.push(data.url);
+                    } catch (e) {
+                        this.photoError = 'Ошибка сети';
+                    } finally {
+                        this.photoUploading = false;
+                    }
+                },
+
+                removeRoomPhoto(idx) {
+                    this.roomPhotos.splice(idx, 1);
                 },
                 async loadSettings() {
                     this.settingsLoading = true;
