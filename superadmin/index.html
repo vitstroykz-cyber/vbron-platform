@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vbron — Супер-панель</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E🛠️%3C/text%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen" x-data="superApp()" x-init="init()">
+
+    <!-- Логин -->
+    <div x-show="!authorized" x-cloak class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full">
+            <div class="text-center mb-6">
+                <div class="text-3xl mb-2">🛠️</div>
+                <div class="text-xl font-bold text-gray-900">vbron Superadmin</div>
+            </div>
+            <form @submit.prevent="checkPassword()" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+                    <input type="password" x-model="pwInput" required autofocus
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div x-show="loginError" x-cloak class="text-red-600 text-sm" x-text="loginError"></div>
+                <button type="submit" class="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-800">Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Основная панель -->
+    <div x-show="authorized" x-cloak>
+        <header class="bg-gray-900 text-white">
+            <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="font-bold">🛠️ vbron Superadmin</div>
+                <button @click="logout()" class="text-sm text-gray-300 hover:text-white">Выход</button>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto px-4 py-6">
+
+            <!-- Кнопка создания -->
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-900">Клиенты платформы (<span x-text="tenants.length"></span>)</h2>
+                <button @click="openNewTenantModal()" class="bg-blue-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-800">
+                    + Новый клиент
+                </button>
+            </div>
+
+            <!-- Список клиентов -->
+            <div class="space-y-2">
+                <template x-for="t in tenants" :key="t.id">
+                    <div class="bg-white rounded-xl shadow-sm p-4" :class="!t.is_active ? 'opacity-60' : ''">
+                        <div class="flex justify-between items-start gap-3">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold text-gray-900" x-text="t.name"></span>
+                                    <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded"
+                                          :class="planClass(t.plan)" x-text="t.plan"></span>
+                                    <span x-show="!t.is_active" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-gray-200 text-gray-600">Выключен</span>
+                                </div>
+                                <div class="text-sm text-gray-500 mt-1">
+                                    <a :href="'https://' + t.slug + '.vbron.kz'" target="_blank" class="text-blue-600 hover:underline" x-text="t.slug + '.vbron.kz'"></a>
+                                    · <span x-text="t.owner_phone"></span>
+                                    · <span x-text="t.owner_email"></span>
+                                </div>
+                                <div class="text-xs text-gray-400 mt-1">
+                                    Номеров: <span x-text="t.rooms_count"></span> · Броней: <span x-text="t.bookings_count"></span> · Создан: <span x-text="formatDate(t.created_at)"></span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-1 shrink-0">
+                                <button @click="toggleActive(t)" class="text-xs px-2 py-1 rounded" :class="t.is_active ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'">
+                                    <span x-text="t.is_active ? 'Отключить' : 'Включить'"></span>
+                                </button>
+                                <button @click="resetPassword(t)" class="text-xs px-2 py-1 rounded bg-amber-50 text-amber-700 hover:bg-amber-100">
+                                    Сбросить пароль
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модалка нового клиента -->
+    <div x-show="newTenantModal" x-cloak @click.self="newTenantModal = false"
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Новый клиент</h3>
+                <button @click="newTenantModal = false" class="text-gray-400 hover:text-gray-600 text-3xl leading-none">×</button>
+            </div>
+
+            <form @submit.prevent="submitNewTenant()" class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Поддомен (slug)</label>
+                    <div class="flex items-center">
+                        <input type="text" x-model="newTenant.slug" required pattern="[a-z0-9-]+"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg font-mono text-sm"
+                               placeholder="aquapark">
+                        <span class="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-sm text-gray-500">.vbron.kz</span>
+                    </div>
+                    <div class="text-[10px] text-gray-400 mt-1">Только строчные латинские буквы, цифры, дефис</div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Название объекта</label>
+                    <input type="text" x-model="newTenant.name" required maxlength="200"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                           placeholder="База отдыха «Название»">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Имя владельца</label>
+                        <input type="text" x-model="newTenant.owner_name"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
+                        <input type="tel" x-model="newTenant.owner_phone" required placeholder="+7..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email (для логина, необязательно)</label>
+                        <input type="email" x-model="newTenant.owner_email" :placeholder="(newTenant.slug || 'client') + '@vbron.kz'"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Тариф</label>
+                        <select x-model="newTenant.plan" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="start">Старт</option>
+                            <option value="bron">Бронь</option>
+                            <option value="premium">Премиум</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Telegram chat_id владельца</label>
+                    <input type="text" x-model="newTenant.telegram_chat_id"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                           placeholder="Получить через @userinfobot">
+                </div>
+
+                <div class="border-t border-gray-200 pt-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-medium text-gray-700">Стартовые номера</label>
+                        <button type="button" @click="addNewRoom()" class="text-xs text-blue-600 hover:underline">+ Добавить номер</button>
+                    </div>
+                    <template x-for="(r, idx) in newTenant.rooms" :key="idx">
+                        <div class="border border-gray-200 rounded-lg p-3 mb-2">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs text-gray-500">Номер <span x-text="idx + 1"></span></span>
+                                <button type="button" @click="newTenant.rooms.splice(idx, 1)" class="text-xs text-red-600 hover:underline">Удалить</button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <input type="text" x-model="r.name" placeholder="Название" class="px-2 py-1.5 border border-gray-300 rounded text-sm">
+                                <select x-model="r.type" class="px-2 py-1.5 border border-gray-300 rounded text-sm">
+                                    <option value="room">Номер</option>
+                                    <option value="cottage">Домик</option>
+                                    <option value="sauna">Сауна</option>
+                                    <option value="gazebo">Беседка</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" x-model="r.capacity" placeholder="Вместимость" class="px-2 py-1.5 border border-gray-300 rounded text-sm">
+                                <input type="number" x-model="r.price_per_day" placeholder="Цена/сутки" class="px-2 py-1.5 border border-gray-300 rounded text-sm">
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div x-show="newTenantError" x-cloak class="text-red-600 text-sm" x-text="newTenantError"></div>
+
+                <button type="submit" :disabled="creating"
+                        class="w-full bg-blue-900 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 disabled:opacity-50">
+                    <span x-show="!creating">Создать клиента</span>
+                    <span x-show="creating">Создание...</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модалка результата (показываем пароль один раз) -->
+    <div x-show="resultModal" x-cloak @click.self="resultModal = false"
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md">
+            <div class="text-center mb-4">
+                <div class="text-4xl mb-2">✅</div>
+                <h3 class="text-xl font-bold text-gray-900">Клиент создан!</h3>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-2 text-sm mb-4">
+                <div><span class="text-gray-500">Сайт:</span> <a :href="result?.urls?.site" target="_blank" class="text-blue-600 hover:underline" x-text="result?.urls?.site"></a></div>
+                <div><span class="text-gray-500">Админка:</span> <a :href="result?.urls?.admin" target="_blank" class="text-blue-600 hover:underline" x-text="result?.urls?.admin"></a></div>
+                <div class="border-t border-gray-200 pt-2 mt-2">
+                    <div><span class="text-gray-500">Email:</span> <b x-text="result?.owner?.email"></b></div>
+                    <div><span class="text-gray-500">Пароль:</span> <b class="font-mono bg-yellow-100 px-2 py-0.5 rounded" x-text="result?.owner?.password"></b></div>
+                </div>
+            </div>
+            <div class="text-xs text-red-600 mb-4">⚠️ Пароль показывается только один раз. Скопируйте и передайте клиенту сейчас.</div>
+            <button @click="copyCredentials()" class="w-full bg-gray-900 text-white py-2.5 rounded-lg font-medium hover:bg-gray-800 mb-2">
+                📋 Скопировать данные для клиента
+            </button>
+            <button @click="resultModal = false; loadTenants()" class="w-full bg-blue-900 text-white py-2.5 rounded-lg font-medium hover:bg-blue-800">
+                Готово
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API = 'https://api.vbron.kz';
+
+        function superApp() {
+            return {
+                authorized: false,
+                pwInput: '',
+                superPassword: '',
+                loginError: '',
+                tenants: [],
+                newTenantModal: false,
+                newTenant: { slug: '', name: '', owner_name: '', owner_phone: '', owner_email: '', plan: 'start', telegram_chat_id: '', rooms: [] },
+                newTenantError: '',
+                creating: false,
+                resultModal: false,
+                result: null,
+
+                init() {
+                    const saved = sessionStorage.getItem('vbron_superadmin_pw');
+                    if (saved) {
+                        this.superPassword = saved;
+                        this.checkStoredPassword();
+                    }
+                },
+
+                async checkStoredPassword() {
+                    try {
+                        const res = await fetch(`${API}/api/superadmin/tenants`, {
+                            headers: { 'X-Superadmin-Password': this.superPassword }
+                        });
+                        if (res.ok) {
+                            this.authorized = true;
+                            await this.loadTenants();
+                        } else {
+                            sessionStorage.removeItem('vbron_superadmin_pw');
+                        }
+                    } catch (e) { console.error(e); }
+                },
+
+                async checkPassword() {
+                    this.loginError = '';
+                    try {
+                        const res = await fetch(`${API}/api/superadmin/tenants`, {
+                            headers: { 'X-Superadmin-Password': this.pwInput }
+                        });
+                        if (!res.ok) {
+                            this.loginError = 'Неверный пароль';
+                            return;
+                        }
+                        this.superPassword = this.pwInput;
+                        sessionStorage.setItem('vbron_superadmin_pw', this.superPassword);
+                        this.authorized = true;
+                        await this.loadTenants();
+                    } catch (e) {
+                        this.loginError = 'Ошибка сети';
+                    }
+                },
+
+                logout() {
+                    sessionStorage.removeItem('vbron_superadmin_pw');
+                    this.authorized = false;
+                    this.superPassword = '';
+                    this.pwInput = '';
+                },
+
+                authHeaders() {
+                    return { 'X-Superadmin-Password': this.superPassword, 'Content-Type': 'application/json' };
+                },
+
+                async loadTenants() {
+                    try {
+                        const res = await fetch(`${API}/api/superadmin/tenants`, { headers: this.authHeaders() });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        this.tenants = data.tenants || [];
+                    } catch (e) { console.error(e); }
+                },
+
+                openNewTenantModal() {
+                    this.newTenant = { slug: '', name: '', owner_name: '', owner_phone: '', owner_email: '', plan: 'start', telegram_chat_id: '', rooms: [] };
+                    this.newTenantError = '';
+                    this.newTenantModal = true;
+                },
+
+                addNewRoom() {
+                    this.newTenant.rooms.push({ name: '', type: 'room', capacity: 2, price_per_day: '' });
+                },
+
+                async submitNewTenant() {
+                    this.newTenantError = '';
+                    this.creating = true;
+                    try {
+                        const body = {
+                            ...this.newTenant,
+                            slug: this.newTenant.slug.toLowerCase().trim(),
+                            rooms: this.newTenant.rooms
+                                .filter(r => r.name && r.price_per_day)
+                                .map(r => ({ ...r, capacity: parseInt(r.capacity) || 2, price_per_day: Number(r.price_per_day) }))
+                        };
+                        const res = await fetch(`${API}/api/superadmin/tenants`, {
+                            method: 'POST', headers: this.authHeaders(), body: JSON.stringify(body)
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                            const map = {
+                                invalid_slug: 'Неверный формат поддомена',
+                                slug_taken: 'Такой поддомен уже занят',
+                                invalid_name: 'Проверьте название',
+                                owner_phone_required: 'Укажите телефон владельца'
+                            };
+                            this.newTenantError = map[data.error] || 'Ошибка создания клиента';
+                            return;
+                        }
+                        this.newTenantModal = false;
+                        this.result = data;
+                        this.resultModal = true;
+                    } catch (e) {
+                        this.newTenantError = 'Ошибка сети';
+                    } finally {
+                        this.creating = false;
+                    }
+                },
+
+                copyCredentials() {
+                    const text = `Добро пожаловать в vbron!\n\nВаш сайт: ${this.result.urls.site}\nАдминка: ${this.result.urls.admin}\n\nЛогин: ${this.result.owner.email}\nПароль: ${this.result.owner.password}\n\nСохраните эти данные — пароль показывается только один раз.`;
+                    navigator.clipboard.writeText(text).then(() => alert('Скопировано в буфер обмена'));
+                },
+
+                async toggleActive(t) {
+                    if (!confirm(`${t.is_active ? 'Отключить' : 'Включить'} клиента «${t.name}»?`)) return;
+                    try {
+                        const res = await fetch(`${API}/api/superadmin/tenants/${t.id}`, {
+                            method: 'PATCH', headers: this.authHeaders(),
+                            body: JSON.stringify({ is_active: !t.is_active })
+                        });
+                        if (!res.ok) { alert('Не удалось изменить'); return; }
+                        await this.loadTenants();
+                    } catch (e) { console.error(e); }
+                },
+
+                async resetPassword(t) {
+                    if (!confirm(`Сбросить пароль для «${t.name}»? Старый пароль перестанет работать.`)) return;
+                    try {
+                        const res = await fetch(`${API}/api/superadmin/tenants/${t.id}/reset-password`, {
+                            method: 'POST', headers: this.authHeaders()
+                        });
+                        const data = await res.json();
+                        if (!res.ok) { alert('Не удалось сбросить пароль'); return; }
+                        alert(`Новый пароль для ${data.email}:\n\n${data.new_password}\n\nСкопируйте сейчас — он больше не покажется.`);
+                    } catch (e) { console.error(e); }
+                },
+
+                planClass(p) {
+                    return { start: 'bg-gray-100 text-gray-700', bron: 'bg-blue-100 text-blue-700', premium: 'bg-purple-100 text-purple-700' }[p] || 'bg-gray-100';
+                },
+                formatDate(d) {
+                    return new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
